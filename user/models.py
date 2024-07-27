@@ -29,7 +29,7 @@ class CustomUser(AbstractBaseUser):
     email=models.EmailField(unique=True)
     username=models.CharField(max_length=33,blank=True)
     password=models.CharField(max_length=33)
-    is_active=models.BooleanField(default=True)
+    is_active=models.BooleanField(default=False)
     is_superuser=models.BooleanField(default=False)
     is_shop=models.BooleanField(default=False)
     date_joined=models.DateField(auto_now_add=True)
