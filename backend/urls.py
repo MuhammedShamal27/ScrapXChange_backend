@@ -25,6 +25,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('',include('user.urls')),
     path('shop/',include('shop.urls')),
+    path('scrapxchange_admin/',include('scrapxchange_admin.urls')),
     path('token/',TokenObtainPairView.as_view(),name='token_obtain_pair'),
     path('token/refresh/',TokenRefreshView.as_view(),name='token_refresh'),
 

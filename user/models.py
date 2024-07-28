@@ -20,7 +20,7 @@ class CustomUserManager(BaseUserManager):
                                 password=password,)
         user.is_active=True
         user.is_superuser=True
-        user.is_shop=True
+        user.is_staff=True
         
         user.save(using=self._db)
         return user
@@ -31,6 +31,7 @@ class CustomUser(AbstractBaseUser):
     password=models.CharField(max_length=33)
     is_active=models.BooleanField(default=False)
     is_superuser=models.BooleanField(default=False)
+    is_staff=models.BooleanField(default=False)
     is_shop=models.BooleanField(default=False)
     date_joined=models.DateField(auto_now_add=True)
     last_login=models.DateField(auto_now=True)

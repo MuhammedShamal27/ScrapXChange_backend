@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'user',
     'shop',
+    'scrapxchange_admin',
     'rest_framework',
     'corsheaders',
 ]
