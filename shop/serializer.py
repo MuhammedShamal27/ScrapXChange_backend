@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
 from user.models import CustomUser
 from . models import *
 import re
@@ -93,3 +95,195 @@ class ShopRegisterSerializer(serializers.ModelSerializer):
         Shop.objects.create(**shop_data)
         return user
     
+class ShopSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Shop
+        fields = '__all__'
+    
+class ShopLoginSerializer(serializers.ModelSerializer):
+    email=serializers.EmailField()
+    password=serializers.CharField(write_only=True)
+
+    class Meta:
+        model =CustomUser
+        fields = ['email','password']
+
+
+    def validate(self, data):
+        email = data.get('email')
+        password =data.get('password')
+
+        if not email and password:
+            raise serializers.ValidationError("Email and password are required.")
+        try:
+            user=CustomUser.objects.get(email=email)
+            shop=Shop.objects.get(user=user)
+            if not shop.is_verified==True:
+                raise serializers.ValidationError("The shop is not yet verifed by the Admin")
+
+        except CustomUser.DoesNotExist:
+            raise serializers.ValidationError("Shop with this email does not exists.")
+        except Shop.DoesNotExist:
+            raise serializers.ValidationError("Shop information is not available.")
+        
+        user=authenticate(email=email,password=password)
+
+        if user is None:
+            raise serializers.ValidationError("Incorrect Password.")
+        
+        refresh=RefreshToken.for_user(user)
+
+        return ({
+            'email':user.email,
+            'username':user.username,
+            'token':{
+                'refresh':str(refresh),
+                'access':str(refresh.access_token)
+            }
+        })
+
+               
+class ShopHomeSerializer(serializers.ModelSerializer):
+    user_profile = serializers.ImageField(source='shop.profile_picture',read_only=True)
+
+    class Meta:
+        model = CustomUser
+        fields = ['username','user_profile']
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
+
+        def validate_name(self,value):
+            if not value.isalpha():
+                raise serializers.ValidationError("Category name should only contain alphabets.")
+            return value
+        
+class CategoryCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['name','image','description']
+
+        def validate_name(self,value):
+            if not value.isalpha():
+                raise serializers.ValidationError("Category name should only conatin alphabets.")
+            user = self.context['request'].user
+            if Category.objects.filter(name=value,shop=user).exists():
+                raise serializers.ValidationError("A Category with this name already exists in your shop")
+            return value
+        
+        def validate(self,data):
+            user = self.context['request'].user
+            shop =Shop.objects.get(user=user)
+            if not shop.is_verified==True or not user.is_shop==True:
+                raise serializers.ValidationError("Only verified shops can create categories.")
+            return data
+        
+        def create(self,validated_data):
+            shop = self.context['request'].user
+            return Category.objects.create(shop=shop,**validated_data)
+        
+class CategoryUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['name','image','description']
+
+    def validate_name(self,value):
+        
+        if not value.isalpha():
+            raise serializers.ValidationError("Category name should only contain alphabets.")
+        user =self.context['request'].user
+        if Category.objects.filter(name=value ,shop=user).exists():
+            raise serializers.ValidationError("A Category with this name already exists.")
+        return value
+    
+    def validate(self,data):
+        user = self.context['request'].user
+        try:
+            shop = Shop.objects.get(user=user)
+        except Shop.DoesNotExist:
+            raise serializers.ValidationError("Shop associated with this user does not exists.")
+        
+        if not shop.is_verified==True or not user.is_shop==True:
+            raise serializers.ValidationError("Only Verified shops can edit categories.")
+        return data
+    
+    def update(self,instance,validated_data):
+        instance.name = validated_data.get('name',instance.name)
+        instance.image = validated_data.get('image',instance.image)
+        instance.description = validated_data.get('descritpion', instance.description)
+        instance.save()
+        return instance
+
+class ProductSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Product
+        fields = '__all__'
+
+
+class ProductCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Product
+        fields = ['name','price','category','image']
+
+    def validate_name(self,value):
+        if not value.isalpha():
+            raise serializers.ValidationError("Product name should only contain alphabets.")
+        user = self.context['request'].user
+        if Product.objects.filter(name=value,shop=user).exists():
+            raise serializers.ValidationError("A product with this name already exists.")
+        return value
+
+    def validate_price(self,value):
+        if value <=0:
+            raise serializers.ValidationError("Product price must be greater than zero.")
+        return value
+    
+    def validate(self, data):
+        user = self.context['request'].user
+        try:
+            shop = Shop.objects.get(user=user)
+        except Shop.DoesNotExist:
+            raise serializers.ValidationError("Shop associated with this user does not exist.")
+    
+        if not shop.is_verified==True:
+            raise serializers.ValidationError("Only verified shops can create products.")
+        
+        data ['shop'] = user
+        return data
+    
+
+class ProductUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields =['name','price','category','image']
+
+    def validate_name(self,value):
+        if not value.isalpha():
+            raise serializers.ValidationError("Product name should only contain alphabets.")
+        user = self.context['request'].user
+        if Product.objects.filter(name=value,shop=user).exists():
+            raise serializers.ValidationError("A product with this name already exists in your shop.")
+        return value
+    
+    def validate_price(self,value):
+        if value <=0:
+            raise serializers.ValidationError("Product price must be greater than zero.")
+        return value
+    
+    def validate(self,data):
+        user = self.context['request'].user
+
+        try:
+            shop = Shop.objects.get(user=user)
+        except Shop.DoesNotExist:
+            raise serializers.ValidationError("Shop associated with this user does not exist.")
+        
+        if not shop.is_verified==True:
+            raise serializers.ValidationError("Only verified shops can update products.")
+        return data
