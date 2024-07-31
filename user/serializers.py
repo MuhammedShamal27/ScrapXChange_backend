@@ -87,8 +87,8 @@ class OTPVerificationSerializer(serializers.Serializer):
             raise serializers.ValidationError("No associated UserProfile found for this User.")
         
         user_profile = user.User_profile
-        print('this',user_profile)
-        if user_profile.otp !=otp:
+        print('this',user_profile.otp)
+        if user_profile.otp != otp:
             raise serializers.ValidationError("Invalid OTP")
         return data
     
@@ -96,6 +96,7 @@ class OTPVerificationSerializer(serializers.Serializer):
         email = self.validated_data['email']
         user=CustomUser.objects.get(email=email)
         user_profile = user.User_profile
+        print("what is this",user_profile)
         user.is_active=True
         user_profile.otp=""
         user_profile.save()

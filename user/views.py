@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -6,18 +7,24 @@ from rest_framework import status
 from .serializers import *
 from .generate_otp import *
 from rest_framework.permissions import IsAuthenticated,AllowAny
-
+import logging
 
 # Create your views here.
 
+logger = logging.getLogger(__name__)
 class UserRegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self,request):
+        logger.debug(f'Recieved data :{request.data}')
         user_serializer=UserRegistrationSerializer(data=request.data)
         if user_serializer.is_valid():
+            logger.info('valid data received , registering user...')
             user_serializer.save()
+            logger.info('User registered successfully')
+            
             return Response({'message':'User registered succesfully'},status=status.HTTP_201_CREATED)
+        logger.warning(f'Invalid data :{user_serializer.errors}')
         return Response(user_serializer.errors,status=status.HTTP_400_BAD_REQUEST)
     
 
@@ -28,7 +35,13 @@ class OTPVerificationView(APIView):
         serializer = OTPVerificationSerializer(data=request.data)
         if serializer.is_valid():
             user =serializer.save()
-            return Response({'message':'OTP Verified succesfully. User account activated'},status=status.HTTP_200_OK)
+            refresh =RefreshToken.for_user(user)
+            return Response({
+                'message':'OTP Verified succesfully. User account activated',
+                'refresh':str(refresh),
+                'access': str(refresh.access_token),
+            },status=status.HTTP_200_OK)
+        logger.warning(f'Invalid data :{serializer.errors}')
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 
