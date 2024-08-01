@@ -26,11 +26,18 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("The Username can't contain space")
         if not value.isalpha():
             raise serializers.ValidationError("Username should only contain alphabets.")
+        if CustomUser.objects.filter(username=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value
+    
+    def validate_email(self,value):
+        if CustomUser.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
         return value
     
     def validate_phone(self,value):
         if not value.isdigit():
-            raise serializers.ValidationErrorf('The phone should only contain number')
+            raise serializers.ValidationError('The phone should only contain number')
         if len(value)!=10:
             raise serializers.ValidationError("The phone number should be 10 digit")
         if UserProfile.objects.filter(phone=value).exists():

@@ -38,7 +38,7 @@ class OTPVerificationView(APIView):
             refresh =RefreshToken.for_user(user)
             return Response({
                 'message':'OTP Verified succesfully. User account activated',
-                'refresh':str(refresh),
+                'refresh': str(refresh),
                 'access': str(refresh.access_token),
             },status=status.HTTP_200_OK)
         logger.warning(f'Invalid data :{serializer.errors}')
@@ -86,13 +86,16 @@ class PasswordResetView(APIView):
             return Response({'message':'Password reset successful.'},status=status.HTTP_200_OK)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
-
+logger = logging.getLogger(__name__)
 class UserLoginView(APIView):
     permission_classes = [AllowAny]
     def post(self,request):
+        logger.info("userlogin",request.data)
         serializer = UserLoginSerializer(data=request.data)
+        logger.info("the serilzier",serializer)
         if serializer.is_valid():
             return Response(serializer.validated_data,status=status.HTTP_200_OK)
+        logger.warning(f"serializer errors:{serializer.errors}")
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -100,9 +103,11 @@ class HomePageView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self,request):
+        logger.debug(f'Recieved data :{request.user}')
         user=request.user
-        serializers = HomePageSerializer(user)
-        return Response(serializers.data)
+        serializer = HomePageSerializer(user)
+        logger.debug(f'Recieved data :{serializer.data}')
+        return Response(serializer.data)
     
 
 class UserProfileView(APIView):
