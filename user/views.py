@@ -62,7 +62,8 @@ class ResendOTPView(APIView):
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 
-class PasswordRestRequestView(APIView):
+
+class PasswordResetRequestView(APIView):
     permission_classes=[AllowAny]
     def post(self,request):
         serializer = PasswordRestRequestSerializer(data=request.data)
@@ -76,11 +77,26 @@ class PasswordRestRequestView(APIView):
             send_otp_via_email(email,otp)
             return Response({'message':'OTP sent for password reset.'},status=status.HTTP_200_OK)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+class EmailOTPVerificationView(APIView):
+    permission_classes = [AllowAny]
     
+    def post(self ,request):
+        serializer = EmailOTPVerificationSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            user = CustomUser.objects.get(email=email)
+            user_profile = UserProfile.objects.get(user=user)
+            
+            user_profile.otp =None
+            user_profile.save()
+            return Response({"message":"OTP verified successfully."}, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 class PasswordResetView(APIView):
     permission_classes=[AllowAny]
     def post(self,request):
-        serializer = PasswordRestSerializer(data=request.data)
+        serializer = PasswordResetSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response({'message':'Password reset successful.'},status=status.HTTP_200_OK)

@@ -131,35 +131,51 @@ class PasswordRestRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError("User with this email does not exist.")
         return value
     
-class PasswordRestSerializer(serializers.Serializer):
+class EmailOTPVerificationSerializer(serializers.Serializer):
     email = serializers.EmailField()
     otp = serializers.CharField(max_length=4)
-    new_password =serializers.CharField(write_only=True,min_length=8)
+    
+    def validate(self, data):
+        email = data.get('email')
+        otp = data.get('otp')
+        
+        try:
+            user = CustomUser.objects.get(email=email)
+            user_profile = UserProfile.objects.get(user=user)
+        except CustomUser.DoesNotExist:
+            raise serializers.ValidationError("User with this email does not exist.")
+        except UserProfile.DoesNotExist:
+            raise serializers.ValidationError("User profile not found.")
+        
+        if user_profile.otp !=otp:
+            raise serializers.ValidationError("Invalid OTP.")
+        
+        return data
+    
+class PasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    new_password =serializers.CharField(write_only=True,min_length=8,max_length=15)
 
     def validate(self,data):
         email= data.get('email')
-        otp = data.get('otp')
         new_password = data.get('new_password')
+        print('new_password')
 
         try:
             user = CustomUser.objects.get(email=email)
-            user_profile=UserProfile.objects.get(user=user)
-            if user_profile.otp != otp:
-                raise serializers.ValidationError('Invalid OTP.')
+    
         except CustomUser.DoesNotExist:
             raise serializers.ValidationError("User with this email does not exist.")
         
         if len(new_password)<8 or len(new_password) >17:
-            raise serializers.ValidationError('The Password should be min 8 and max 15 character.')
+            raise serializers.ValidationError('The Password should be min 8 and max 17 character.')
         return data
     
     def save(self):
         email = self.validated_data['email']
         new_password = self.validated_data['new_password']
         user=CustomUser.objects.get(email=email)
-        user_profile=UserProfile.objects.get(user=user)
         user.set_password(new_password)
-        user_profile.otp=""
         user.save()
         return user
     
