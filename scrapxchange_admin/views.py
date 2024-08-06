@@ -5,7 +5,7 @@ from rest_framework import status,permissions,generics,serializers
 from rest_framework.exceptions import PermissionDenied,NotFound
 from . serializer import *
 from django.contrib.auth import login
-from rest_framework.permissions import IsAdminUser,IsAuthenticated
+from rest_framework.permissions import IsAdminUser,IsAuthenticated,AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import *
 from user.models import CustomUser
@@ -14,7 +14,7 @@ from rest_framework.generics import RetrieveAPIView
 
 
 class AdminLoginView(APIView):
-    permission_classes =[IsAdminUser]
+    permission_classes =[AllowAny]
 
 
     def post(self,request,*args, **kwargs):
@@ -72,19 +72,22 @@ class UserBlockView(APIView):
             if not request.user.is_superuser:
                 raise PermissionDenied("You do not have permission to modify this user.")
             
-            action =request.data.get('action')
-            if action =='block':
+            actionPerformed =request.data.get('actionPerformed')
+            if actionPerformed =='block':
                 user_profile.is_blocked = True
                 message ='User has been blocked.'
-            elif action =='unblock':
+            elif actionPerformed =='unblock':
                 user_profile.is_blocked = False
                 message = 'User has been unblocked.'
             else:
                 return Response({"error":"Invalid action. Use 'block' or 'unblock'."},status=status.HTTP_400_BAD_REQUEST)
             user_profile.save()
-            return Response({"message":"User has been blocked."},status=status.HTTP_200_OK)
+            print("the messge",message)
+            return Response({"message":message},status=status.HTTP_200_OK)
         except UserProfile.DoesNotExist:
             return Response({"error":"User profile not found."},status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
