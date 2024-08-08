@@ -56,6 +56,7 @@ class ResendOTPView(APIView):
             user_profile =UserProfile.objects.get(user=user)
             otp=generate_otp()
             user_profile.otp=otp
+            user_profile.otp_generated_at = timezone.now()
             user_profile.save()
             send_otp_via_email(email,otp)
             return Response({'message':'OTP sent successfully.'},status=status.HTTP_200_OK)
@@ -161,4 +162,6 @@ class EditUserProfileView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response({'message':'Profile updated successfully','data':serializer.data},status=status.HTTP_200_OK)
+        else:
+            print(f"Validation errors: {serializer.errors}")
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)

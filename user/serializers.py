@@ -1,9 +1,11 @@
+from django.db import IntegrityError
 from .models import CustomUser,UserProfile
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from .generate_otp import *
 from django.core.validators import RegexValidator
-
+from django.utils import timezone
+import datetime
 
 class UserProfilePhoneSerializer(serializers.ModelSerializer):
     class Meta:
@@ -26,12 +28,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("The Username can't contain space")
         if not value.isalpha():
             raise serializers.ValidationError("Username should only contain alphabets.")
-        if CustomUser.objects.filter(username=value).exists():
+        if CustomUser.objects.filter(username=value).exclude(User_profile__is_validated=False).exists():
             raise serializers.ValidationError("A user with this email already exists.")
         return value
     
     def validate_email(self,value):
-        if CustomUser.objects.filter(email=value).exists():
+        if CustomUser.objects.filter(email=value).exclude(User_profile__is_validated=False).exists():
             raise serializers.ValidationError("A user with this email already exists.")
         return value
     
@@ -40,7 +42,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('The phone should only contain number')
         if len(value)!=10:
             raise serializers.ValidationError("The phone number should be 10 digit")
-        if UserProfile.objects.filter(phone=value).exists():
+        if UserProfile.objects.filter(phone=value).exclude(is_validated=False).exists():
             raise serializers.ValidationError("A user with this phone number is already exists.")
         return value
 
@@ -59,16 +61,19 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         phone = validated_data.pop('phone')
         validated_data.pop('confirm_password')
-        user=CustomUser.objects.create_user(
-            email=validated_data['email'],
-            username=validated_data['username'],
-            password=validated_data['password'],
-        )
+        try:
+            user=CustomUser.objects.create_user(
+                email=validated_data['email'],
+                username=validated_data['username'],
+                password=validated_data['password'],
+            )
+        except IntegrityError:
+            raise serializers.ValidationError("A user with this email already exists.")
         
         otp=generate_otp()
         user_profile,created = UserProfile.objects.get_or_create(
             user=user,
-            defaults={'phone':phone,'otp':otp}
+            defaults={'phone':phone,'otp':otp , 'otp_generated_at':timezone.now()}
             )
         send_otp_via_email(user.email,otp)
         return user
@@ -94,6 +99,9 @@ class OTPVerificationSerializer(serializers.Serializer):
             raise serializers.ValidationError("No associated UserProfile found for this User.")
         
         user_profile = user.User_profile
+        
+        if user_profile.otp_generated_at and(timezone.now() - user_profile.otp_generated_at > datetime.timedelta(minutes = 1)):
+            raise serializers.ValidationError("OTP has expired , Please request for new one")
         print('this',user_profile.otp)
         if user_profile.otp != otp:
             raise serializers.ValidationError("Invalid OTP")
@@ -106,6 +114,7 @@ class OTPVerificationSerializer(serializers.Serializer):
         print("what is this",user_profile)
         user.is_active=True
         user_profile.otp=""
+        user_profile.otp_generated_at = None
         user_profile.save()
         user.save()
         return user

@@ -61,6 +61,8 @@ class UserProfile(models.Model):
     profile_picture =models.ImageField(upload_to='Profile_pics',blank=True)
     is_blocked= models.BooleanField(default=False)
     otp = models.CharField(max_length=6,blank=True,null=True)
+    otp_generated_at = models.DateTimeField(blank=True, null=True)
+    is_validated = models.BooleanField(default=False)
 
 
     def __str__(self):
