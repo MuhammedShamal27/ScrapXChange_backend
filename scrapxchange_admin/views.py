@@ -146,7 +146,7 @@ class ShopRequestListView(generics.ListAPIView):
     def get_queryset(self):
         if not self.request.user.is_superuser:
             raise PermissionDenied("You do not have permission to access this resource.")
-        return CustomUser.objects.filter(shop__is_verified=False)
+        return CustomUser.objects.filter(shop__is_verified=False,shop__is_rejected=False)
     
     def list(self,request,*args, **kwargs):
         queryset = self.get_queryset()
@@ -162,37 +162,49 @@ class ShopRequestDetailView(RetrieveAPIView):
 
     def get_queryset(self):
         if not self.request.user.is_superuser:
-            raise PermissionDenied("You do not have permission to access this resources.")
+            raise PermissionDenied("You do not have permission to access this resource.")
         return CustomUser.objects.filter(shop__is_verified=False)
+    
+    def get_object(self):
+        queryset = self.get_queryset()
+        filter_kwargs = {self.lookup_field: self.kwargs['id']}
+        obj = queryset.filter(**filter_kwargs).first()
+        if not obj:
+            raise NotFound("Shop not found.")
+        return obj
+
     
 
 class AcceptShopView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self,request,id):
+    def post(self, request, id):
         if not request.user.is_superuser:
             raise PermissionDenied("You do not have permission to perform this action.")
         try:
-            shop = Shop.objects.get(id=id)
+            user = CustomUser.objects.get(id=id)
+            shop = user.shop
             shop.is_verified = True
             shop.save()
-            return Response({"message":'Shop has been verified.'})
+            return Response({"message": 'Shop has been verified.'})
+        except CustomUser.DoesNotExist:
+            raise NotFound("User not found.")
         except Shop.DoesNotExist:
             raise NotFound("Shop not found.")
         
 class RejectShopView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self,request,id):
+    def post(self, request, id):
         if not request.user.is_superuser:
             raise PermissionDenied("You do not have permission to perform this action.")
         try:
-            shop = Shop.objects.get(id=id)
-            shop_user = shop.user
-            shop.delete()
-            shop_user.is_shop = False
-            shop_user.save()
-            return Response({"message":'Shop has been rejected and deleted.'})
+            user = CustomUser.objects.get(id=id)
+            shop = user.shop
+            shop.is_rejected = True
+            shop.save()
+            return Response({"message": 'Shop has been rejected.'})
+        except CustomUser.DoesNotExist:
+            raise NotFound("User not found.")
         except Shop.DoesNotExist:
             raise NotFound("Shop not found.")
-

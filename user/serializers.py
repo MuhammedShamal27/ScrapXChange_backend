@@ -258,7 +258,7 @@ class EditUserProfileSerializer(serializers.ModelSerializer):
         return value
     
     def validate_address(self,value):
-        if value and (value[0].isspace() or any(c in "!@#$%^&()_+=<>?/;:'\"[]{}|\\`~" for c in value)):
+        if value and (value[0].isspace() or any(c in "!@#$%^&()_+=<>?/;:'\"[]{}|\\`~" for c in value)and not ('.' in value or ',' in value)):
             raise serializers.ValidationError("Address cannot start with a space or contain special character except dot(.) and comma (,)")
         return value
     
@@ -283,8 +283,10 @@ class EditUserProfileSerializer(serializers.ModelSerializer):
     def update(self,instance,validate_data):
         user_data = validate_data.pop('user',{})
         user = instance.user
-        user.username = user_data.get('username',user.username)
-        user.email = validate_data.get('email',user.email)
+        if 'username' in user_data:
+            user.username = user_data['username']
+        if 'email' in user_data:
+            user.email = user_data['email']
         user.save()
         
         instance.address = validate_data.get('address',instance.address)

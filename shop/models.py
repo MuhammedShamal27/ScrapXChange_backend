@@ -13,6 +13,7 @@ class Shop(models.Model):
     profile_picture = models.ImageField(upload_to='shop_pics',blank=True)
     is_blocked = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)
+    is_rejected = models.BooleanField(default=False)
 
     def __str__(self):
         return self.shop_name

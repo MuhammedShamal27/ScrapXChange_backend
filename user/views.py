@@ -162,6 +162,4 @@ class EditUserProfileView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response({'message':'Profile updated successfully','data':serializer.data},status=status.HTTP_200_OK)
-        else:
-            print(f"Validation errors: {serializer.errors}")
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
