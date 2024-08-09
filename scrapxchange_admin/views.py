@@ -46,12 +46,35 @@ class UserListView(generics.ListAPIView):
     def get_queryset(self):
         if not self.request.user.is_superuser:
             raise PermissionDenied("You do not have permission to access this resources.")
-        return CustomUser.objects.filter(is_superuser=False,is_shop=False)
+        queryset = CustomUser.objects.filter(is_superuser=False, is_shop=False)
+        search_query = self.request.query_params.get('search', None)
+        if search_query:
+            queryset = queryset.filter(username__icontains=search_query)
+            
+        return queryset
 
     def list(self,request,*args, **kwargs):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset,many=True)
         return Response(serializer.data)
+    
+class BlockedUserListView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserListSerializer
+
+    def get_queryset(self):
+        if not self.request.user.is_superuser:
+            raise PermissionDenied("You do not have permission to access this resource.")
+        return CustomUser.objects.filter(is_superuser=False, is_shop=False, User_profile__is_blocked=True)
+
+class UnblockedUserListView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserListSerializer
+
+    def get_queryset(self):
+        if not self.request.user.is_superuser:
+            raise PermissionDenied("You do not have permission to access this resource.")
+        return CustomUser.objects.filter(is_superuser=False, is_shop=False, User_profile__is_blocked=False)
 
 class UserDetailsView(RetrieveAPIView):
     permission_classes = [IsAuthenticated]
@@ -98,7 +121,13 @@ class ShopListView(generics.ListAPIView):
     def get_queryset(self):
         if not self.request.user.is_superuser:
             raise PermissionDenied("You do not have permission to acess this resource.")
-        return CustomUser.objects.filter(is_superuser=False,is_shop=True,shop__is_verified=True)
+        queryset = CustomUser.objects.filter(is_superuser=False,is_shop=True,shop__is_verified=True)
+        search_query = self.request.query_params.get('search', None)
+        if search_query:
+            queryset = queryset.filter(username__icontains=search_query)
+            
+        return queryset
+
     
     def list(self,request,*args, **kwargs):
         queryset = self.get_queryset()
@@ -107,6 +136,24 @@ class ShopListView(generics.ListAPIView):
         serializer = self.get_serializer(queryset,many=True)
         return Response(serializer.data)
     
+class BlockedShopListView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ShopListSerializer
+
+    def get_queryset(self):
+        if not self.request.user.is_superuser:
+            raise PermissionDenied("You do not have permission to access this resource.")
+        return CustomUser.objects.filter(is_superuser=False, is_shop=True, shop__is_blocked=True, shop__is_verified=True)
+
+class UnblockedShopListView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ShopListSerializer
+
+    def get_queryset(self):
+        if not self.request.user.is_superuser:
+            raise PermissionDenied("You do not have permission to access this resource.")
+        return CustomUser.objects.filter(is_superuser=False, is_shop=True, shop__is_blocked=False, shop__is_verified=True)
+
 class ShopDetailsView(RetrieveAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ShopListSerializer
@@ -120,23 +167,34 @@ class ShopDetailsView(RetrieveAPIView):
 class ShopBlockView(APIView):
     permission_classes = [IsAuthenticated]
     
-    def post(self,request,id,action):
-        if not request.user.is_superuser:
-            raise PermissionDenied("You do not have permission to perform this action.")
+    def post(self, request, id, *args, **kwargs):
         try:
-            shop = Shop.objects.get(id=id)
-            if action =='block':
+            user = CustomUser.objects.get(id=id)
+            if not request.user.is_superuser:
+                raise PermissionDenied("You do not have permission to modify this shop.")
+            
+            if not hasattr(user, 'shop'):
+                return Response({"error": "Shop associated with this user not found."}, status=status.HTTP_404_NOT_FOUND)
+            
+            shop = user.shop
+
+            actionPerformed = request.data.get('actionPerformed')
+            if actionPerformed == 'block':
                 shop.is_blocked = True
-                message ='Shop has been blocked.'
-            elif action =='unblock':
+                message = 'Shop has been blocked.'
+            elif actionPerformed == 'unblock':
                 shop.is_blocked = False
                 message = 'Shop has been unblocked.'
             else:
-                return Response({"error":"Invalid action."},status=400)
+                return Response({"error": "Invalid action. Use 'block' or 'unblock'."}, status=status.HTTP_400_BAD_REQUEST)
+            
             shop.save()
-            return Response({"message":message})
+            return Response({"message": message}, status=status.HTTP_200_OK)
+        
         except Shop.DoesNotExist:
-            raise NotFound("Shop not found.")
+            return Response({"error": "Shop not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
 class ShopRequestListView(generics.ListAPIView):
