@@ -137,7 +137,7 @@ class ShopLoginSerializer(serializers.ModelSerializer):
         return ({
             'email':user.email,
             'username':user.username,
-            'token':{
+            'tokens':{
                 'refresh':str(refresh),
                 'access':str(refresh.access_token)
             }
@@ -157,93 +157,133 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = '__all__'
 
-        def validate_name(self,value):
-            if not value.isalpha():
-                raise serializers.ValidationError("Category name should only contain alphabets.")
-            return value
+    def validate_name(self,value):
+        if not value.isalpha():
+            raise serializers.ValidationError("Category name should only contain alphabets.")
+        return value
         
 class CategoryCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['name','image','description']
+        fields = ['name', 'image', 'description']
 
-        def validate_name(self,value):
-            if not value.isalpha():
-                raise serializers.ValidationError("Category name should only conatin alphabets.")
-            user = self.context['request'].user
-            if Category.objects.filter(name=value,shop=user).exists():
-                raise serializers.ValidationError("A Category with this name already exists in your shop")
-            return value
-        
-        def validate(self,data):
-            user = self.context['request'].user
-            shop =Shop.objects.get(user=user)
-            if not shop.is_verified==True or not user.is_shop==True:
-                raise serializers.ValidationError("Only verified shops can create categories.")
-            return data
-        
-        def create(self,validated_data):
-            shop = self.context['request'].user
-            return Category.objects.create(shop=shop,**validated_data)
+    def validate_name(self, value):
+        user = self.context['request'].user
+        if not value.isalpha():
+            raise serializers.ValidationError("Category name should only contain alphabets.")
+        if Category.objects.filter(name=value, shop=user).exists():
+            raise serializers.ValidationError("A category with this name already exists in your shop.")
+        return value
+
+    def validate_image(self, value):
+        if not value or not hasattr(value, 'content_type'):
+            raise serializers.ValidationError("Please upload a valid image.")
+        if not value.content_type.startswith('image'):
+            raise serializers.ValidationError("File must be an image.")
+        return value
+
+    def validate_description(self, value):
+        if not value:
+            raise serializers.ValidationError("Description cannot be empty.")
+        if len(value) < 10:
+            raise serializers.ValidationError("Description should be at least 10 characters long.")
+        return value
+
+    def validate(self, data):
+        user = self.context['request'].user
+        shop = Shop.objects.get(user=user)
+        if not shop.is_verified or not user.is_shop:
+            raise serializers.ValidationError("Only verified shops can create categories.")
+        return data
+
+    def create(self, validated_data):
+        return Category.objects.create(**validated_data)
         
 class CategoryUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['name','image','description']
+        fields = ['name', 'image', 'description']
 
-    def validate_name(self,value):
-        
+    def validate_name(self, value):
+        user = self.context['request'].user
         if not value.isalpha():
             raise serializers.ValidationError("Category name should only contain alphabets.")
-        user =self.context['request'].user
-        if Category.objects.filter(name=value ,shop=user).exists():
-            raise serializers.ValidationError("A Category with this name already exists.")
+        # Exclude the current instance to avoid false positives when updating
+        category_id = self.instance.id if self.instance else None
+        if Category.objects.filter(name=value, shop=user).exclude(id=category_id).exists():
+            raise serializers.ValidationError("A category with this name already exists.")
         return value
-    
-    def validate(self,data):
+
+    def validate_image(self, value):
+        if value and not hasattr(value, 'content_type'):
+            raise serializers.ValidationError("Please upload a valid image.")
+        if value and not value.content_type.startswith('image'):
+            raise serializers.ValidationError("File must be an image.")
+        return value
+
+    def validate_description(self, value):
+        if value and len(value) < 10:
+            raise serializers.ValidationError("Description should be at least 10 characters long.")
+        return value
+
+    def validate(self, data):
         user = self.context['request'].user
         try:
             shop = Shop.objects.get(user=user)
         except Shop.DoesNotExist:
-            raise serializers.ValidationError("Shop associated with this user does not exists.")
+            raise serializers.ValidationError("Shop associated with this user does not exist.")
         
-        if not shop.is_verified==True or not user.is_shop==True:
-            raise serializers.ValidationError("Only Verified shops can edit categories.")
+        if not shop.is_verified or not user.is_shop:
+            raise serializers.ValidationError("Only verified shops can edit categories.")
         return data
     
-    def update(self,instance,validated_data):
-        instance.name = validated_data.get('name',instance.name)
-        instance.image = validated_data.get('image',instance.image)
-        instance.description = validated_data.get('descritpion', instance.description)
+    def update(self, instance, validated_data):
+        instance.name = validated_data.get('name', instance.name)
+        instance.image = validated_data.get('image', instance.image)
+        instance.description = validated_data.get('description', instance.description)  # Fixed typo here
         instance.save()
         return instance
 
 class ProductSerializer(serializers.ModelSerializer):
+    category_name = serializers.ReadOnlyField(source='category.name')
 
     class Meta:
         model = Product
-        fields = '__all__'
+        fields = ['id', 'name', 'price', 'category_name', 'image', 'shop']
 
 
 class ProductCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['name','price','category','image']
+        fields = ['name', 'price', 'category', 'image']
 
-    def validate_name(self,value):
+    def validate_name(self, value):
         if not value.isalpha():
             raise serializers.ValidationError("Product name should only contain alphabets.")
         user = self.context['request'].user
-        if Product.objects.filter(name=value,shop=user).exists():
+        if Product.objects.filter(name=value, shop=user).exists():
             raise serializers.ValidationError("A product with this name already exists.")
         return value
 
-    def validate_price(self,value):
-        if value <=0:
+    def validate_price(self, value):
+        if value <= 0:
             raise serializers.ValidationError("Product price must be greater than zero.")
         return value
-    
+
+    def validate_category(self, value):
+        user = self.context['request'].user
+        if not Category.objects.filter(id=value.id, shop=user).exists():
+            raise serializers.ValidationError("Selected category does not exist in your shop or you do not have permission to use it.")
+        return value
+
+    def validate_image(self, value):
+        if value and not hasattr(value, 'content_type'):
+            raise serializers.ValidationError("Please upload a valid image.")
+        if value and not value.content_type.startswith('image'):
+            raise serializers.ValidationError("File must be an image.")
+        return value
+
     def validate(self, data):
         user = self.context['request'].user
         try:
@@ -251,32 +291,47 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         except Shop.DoesNotExist:
             raise serializers.ValidationError("Shop associated with this user does not exist.")
     
-        if not shop.is_verified==True:
+        if not shop.is_verified:
             raise serializers.ValidationError("Only verified shops can create products.")
         
-        data ['shop'] = user
+        data['shop'] = user
         return data
     
 
 class ProductUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields =['name','price','category','image']
+        fields = ['name', 'price', 'category', 'image']
 
-    def validate_name(self,value):
+    def validate_name(self, value):
+        user = self.context['request'].user
         if not value.isalpha():
             raise serializers.ValidationError("Product name should only contain alphabets.")
-        user = self.context['request'].user
-        if Product.objects.filter(name=value,shop=user).exists():
+        # Exclude the current instance to avoid false positives when updating
+        product_id = self.instance.id if self.instance else None
+        if Product.objects.filter(name=value, shop=user).exclude(id=product_id).exists():
             raise serializers.ValidationError("A product with this name already exists in your shop.")
         return value
     
-    def validate_price(self,value):
-        if value <=0:
+    def validate_price(self, value):
+        if value <= 0:
             raise serializers.ValidationError("Product price must be greater than zero.")
         return value
+
+    def validate_category(self, value):
+        user = self.context['request'].user
+        if not Category.objects.filter(id=value.id, shop=user).exists():
+            raise serializers.ValidationError("Selected category does not exist in your shop or you do not have permission to use it.")
+        return value
     
-    def validate(self,data):
+    def validate_image(self, value):
+        if value and not hasattr(value, 'content_type'):
+            raise serializers.ValidationError("Please upload a valid image.")
+        if value and not value.content_type.startswith('image'):
+            raise serializers.ValidationError("File must be an image.")
+        return value
+    
+    def validate(self, data):
         user = self.context['request'].user
 
         try:
@@ -284,6 +339,6 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         except Shop.DoesNotExist:
             raise serializers.ValidationError("Shop associated with this user does not exist.")
         
-        if not shop.is_verified==True:
+        if not shop.is_verified:
             raise serializers.ValidationError("Only verified shops can update products.")
         return data

@@ -47,6 +47,7 @@ class CategoryListView(generics.ListAPIView):
         return Category.objects.filter(shop=self.request.user)
 
 @method_decorator(csrf_exempt,name='dispatch') 
+
 class CategoryCreateView(generics.CreateAPIView):
     serializer_class = CategoryCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -56,34 +57,54 @@ class CategoryCreateView(generics.CreateAPIView):
         if not user.shop.is_verified==True:
             raise PermissionDenied("Your shop is not verified.")
         serializer.save(shop = user)
-
-
+        
 class CategoryUpdateView(generics.UpdateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategoryUpdateSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_update(self, serializer):
-        user =self.request.user
-        print("the user",user)
+        user = self.request.user
 
-        try:
-            shop =Shop.objects.get(user=user)
-            print("the shop",shop)
-        except Shop.DoesNotExist:
-            raise PermissionDenied("Shop assoiciated with the user does  not exist.")
+        # The following checks are handled by the serializer:
+        # - Whether the shop exists and belongs to the user
+        # - Whether the shop is verified and the user is a shop owner
         
         category = self.get_object()
-        print("this is the category",category)
-        print("this is the category shop",category.shop)
 
-        if category.shop !=user:
+        # Check if the category belongs to the user
+        if category.shop != user:
             raise PermissionDenied("You do not have permission to edit this category.")
         
-        if not shop.is_verified==True or not user.is_shop==True:
-            raise PermissionDenied("Only verified shops can edit categories.")
-        
+        # Save the serializer if all checks pass
         serializer.save()
+
+# class CategoryUpdateView(generics.UpdateAPIView):
+#     queryset = Category.objects.all()
+#     serializer_class = CategoryUpdateSerializer
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def perform_update(self, serializer):
+#         user =self.request.user
+#         print("the user",user)
+
+#         try:
+#             shop =Shop.objects.get(user=user)
+#             print("the shop",shop)
+#         except Shop.DoesNotExist:
+#             raise PermissionDenied("Shop assoiciated with the user does  not exist.")
+        
+#         category = self.get_object()
+#         print("this is the category",category)
+#         print("this is the category shop",category.shop)
+
+#         if category.shop !=user:
+#             raise PermissionDenied("You do not have permission to edit this category.")
+        
+#         if not shop.is_verified==True or not user.is_shop==True:
+#             raise PermissionDenied("Only verified shops can edit categories.")
+        
+#         serializer.save()
 
 
 class ProductListView(generics.ListAPIView):
