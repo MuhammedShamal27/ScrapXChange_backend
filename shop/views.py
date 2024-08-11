@@ -45,6 +45,7 @@ class CategoryListView(generics.ListAPIView):
         if not self.request.user.is_shop:
             raise PermissionDenied("You do not have permission to access this resource.")
         return Category.objects.filter(shop=self.request.user)
+    
 
 @method_decorator(csrf_exempt,name='dispatch') 
 
@@ -58,6 +59,17 @@ class CategoryCreateView(generics.CreateAPIView):
             raise PermissionDenied("Your shop is not verified.")
         serializer.save(shop = user)
         
+class CategoryDetailView(generics.RetrieveAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        category = super().get_object()
+        if category.shop != self.request.user:
+            raise PermissionDenied("You do not have permission to access this category.")
+        return category
+        
 class CategoryUpdateView(generics.UpdateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategoryUpdateSerializer
@@ -65,18 +77,10 @@ class CategoryUpdateView(generics.UpdateAPIView):
 
     def perform_update(self, serializer):
         user = self.request.user
-
-        # The following checks are handled by the serializer:
-        # - Whether the shop exists and belongs to the user
-        # - Whether the shop is verified and the user is a shop owner
         
         category = self.get_object()
-
-        # Check if the category belongs to the user
         if category.shop != user:
             raise PermissionDenied("You do not have permission to edit this category.")
-        
-        # Save the serializer if all checks pass
         serializer.save()
 
 # class CategoryUpdateView(generics.UpdateAPIView):
@@ -136,6 +140,17 @@ class ProductCreateView(generics.CreateAPIView):
             raise PermissionDenied("Only verified shops can create products.")
         
         serializer.save(shop=user)
+
+class ProductDetailView(generics.RetrieveAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        product = super().get_object()
+        if product.shop != self.request.user:
+            raise PermissionDenied("You do not have permission to access this product.")
+        return product
 
 
 class ProductUpdateView(generics.UpdateAPIView):
