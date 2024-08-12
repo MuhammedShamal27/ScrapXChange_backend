@@ -6,6 +6,7 @@ from .generate_otp import *
 from django.core.validators import RegexValidator
 from django.utils import timezone
 import datetime
+from shop.models import *
 
 class UserProfilePhoneSerializer(serializers.ModelSerializer):
     class Meta:
@@ -201,6 +202,10 @@ class UserLoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Email and password are required")
         try:
             user = CustomUser.objects.get(email=email)
+            user_profile=UserProfile.objects.get(user=user)
+            
+            if user_profile.is_blocked:
+                raise serializers.ValidationError("This user is blocked.")
 
         except CustomUser.DoesNotExist:
             raise serializers.ValidationError('User with this email does not exist.')
@@ -280,19 +285,60 @@ class EditUserProfileSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Pincode must be 6 digits.")
         return value
     
-    def update(self,instance,validate_data):
-        user_data = validate_data.pop('user',{})
+    def validate_profile_picture(self, value):
+        # Example validation: Check the size of the image (max 2MB)
+        max_size = 2 * 1024 * 1024  # 2MB
+        if value and value.size > max_size:
+            raise serializers.ValidationError("Profile picture size cannot exceed 2MB.")
+        # You can also add other validations like checking file type if necessary
+        return value
+    
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user', {})
         user = instance.user
         if 'username' in user_data:
             user.username = user_data['username']
         if 'email' in user_data:
             user.email = user_data['email']
         user.save()
+
+        instance.address = validated_data.get('address', instance.address)
+        instance.phone = validated_data.get('phone', instance.phone)
+        instance.alternative_phone = validated_data.get('alternative_phone', instance.alternative_phone)
+        instance.pincode = validated_data.get('pincode', instance.pincode)
+        profile_picture = validated_data.get('profile_picture')
+        if profile_picture:
+            instance.profile_picture = profile_picture
         
-        instance.address = validate_data.get('address',instance.address)
-        instance.phone = validate_data.get('phone',instance.phone)
-        instance.alternative_phone = validate_data.get('alternative_phone',instance.alternative_phone)
-        instance.pincode = validate_data.get('pincode',instance.pincode)
-        instance.profile_picture = validate_data.get('profile_picture',instance.profile_picture)
         instance.save()
+        
         return instance
+
+    
+    
+class ShopSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Shop
+        fields = ['id', 'shop_name', 'address', 'place', 'profile_picture']
+        
+
+        
+
+        
+    
+    
+class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['id', 'name', 'price', 'category', 'image']
+
+class CategorySerializer(serializers.ModelSerializer):
+    products = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'products']
+
+    def get_products(self, category):
+        products = Product.objects.filter(category=category)
+        return ProductSerializer(products, many=True).data

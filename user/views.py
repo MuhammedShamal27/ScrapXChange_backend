@@ -1,12 +1,14 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework import status
 from .serializers import *
 from .generate_otp import *
 from rest_framework.permissions import IsAuthenticated,AllowAny
+from rest_framework.exceptions import NotFound
 import logging
 
 # Create your views here.
@@ -142,24 +144,59 @@ class UserProfileView(APIView):
 
 class EditUserProfileView(APIView):
     permission_classes = [IsAuthenticated]
+    
 
     def get(self,request):
         try:
             user_profile =UserProfile.objects.get(user=request.user)
         except UserProfile.DoesNotExist:
             return Response({"error":"UserProfile not found."},status=status.HTTP_400_BAD_REQUEST)
-        serializers =EditUserProfileSerializer(user_profile)
-        return Response(serializers.data)
+        serializer =EditUserProfileSerializer(user_profile)
+        print('this is the get method',serializer)
+        return Response(serializer.data)
 
-    def put(self,request):
-        print(f"Authenticated user: {request.user}")
+    def put(self, request):
         try:
             user_profile = UserProfile.objects.get(user=request.user)
         except UserProfile.DoesNotExist:
-            return Response({"error":"UserProfile not found."})
+            return Response({"error": "UserProfile not found."}, status=status.HTTP_404_NOT_FOUND)
+        print(request.data.get('profile_picture'))
+        if isinstance(request.data.get('profile_picture'), str):
+            request_data = request.data.copy()
+            request_data.pop('profile_picture', None)
+            serializer = EditUserProfileSerializer(user_profile, data=request_data, partial=True)
+        else:
+            serializer = EditUserProfileSerializer(user_profile, data=request.data, partial=True)
 
-        serializer = EditUserProfileSerializer(user_profile,data=request.data,partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response({'message':'Profile updated successfully','data':serializer.data},status=status.HTTP_200_OK)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'Profile updated successfully', 'data': serializer.data}, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    
+    
+class ShopListView(ListAPIView):
+    serializer_class = ShopSerializer
+
+    def get_queryset(self):
+        return Shop.objects.filter(
+            user__is_superuser=False, 
+            user__is_shop=True, 
+            is_blocked=False, 
+            is_verified=True, 
+            is_rejected=False
+        )
+
+
+class ShopProductListView(ListAPIView):
+    serializer_class = CategorySerializer
+
+    def get_queryset(self):
+        shop_id = self.kwargs.get('shop_id')
+        try:
+            shop = Shop.objects.get(id=shop_id)
+        except Shop.DoesNotExist:
+            raise NotFound(detail="Shop not found")
+        user = shop.user
+        return Category.objects.filter(shop=user).distinct()

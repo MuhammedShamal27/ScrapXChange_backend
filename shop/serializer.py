@@ -102,46 +102,52 @@ class ShopSerializer(serializers.ModelSerializer):
         fields = '__all__'
     
 class ShopLoginSerializer(serializers.ModelSerializer):
-    email=serializers.EmailField()
-    password=serializers.CharField(write_only=True)
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
 
     class Meta:
-        model =CustomUser
-        fields = ['email','password']
-
+        model = CustomUser
+        fields = ['email', 'password']
 
     def validate(self, data):
         email = data.get('email')
-        password =data.get('password')
+        password = data.get('password')
 
-        if not email and password:
+        if not email or not password:
             raise serializers.ValidationError("Email and password are required.")
+        
         try:
-            user=CustomUser.objects.get(email=email)
-            shop=Shop.objects.get(user=user)
-            if not shop.is_verified==True:
-                raise serializers.ValidationError("The shop is not yet verifed by the Admin")
-
+            user = CustomUser.objects.get(email=email)
+            shop = Shop.objects.get(user=user)
+            
+            if shop.is_blocked:
+                raise serializers.ValidationError("This shop is blocked.")
+            if not shop.is_verified:
+                raise serializers.ValidationError("The shop is not yet verified by the Admin.")
+            if shop.is_rejected:
+                raise serializers.ValidationError("This shop has been rejected by the Admin.")
+            
         except CustomUser.DoesNotExist:
-            raise serializers.ValidationError("Shop with this email does not exists.")
+            raise serializers.ValidationError("Shop with this email does not exist.")
         except Shop.DoesNotExist:
             raise serializers.ValidationError("Shop information is not available.")
         
-        user=authenticate(email=email,password=password)
+        user = authenticate(email=email, password=password)
 
         if user is None:
             raise serializers.ValidationError("Incorrect Password.")
         
-        refresh=RefreshToken.for_user(user)
+        refresh = RefreshToken.for_user(user)
 
-        return ({
-            'email':user.email,
-            'username':user.username,
-            'tokens':{
-                'refresh':str(refresh),
-                'access':str(refresh.access_token)
+        return {
+            'email': user.email,
+            'username': user.username,
+            'tokens': {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token)
             }
-        })
+        }
+
 
                
 class ShopHomeSerializer(serializers.ModelSerializer):
@@ -171,7 +177,7 @@ class CategoryCreateSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         if not value.isalpha():
             raise serializers.ValidationError("Category name should only contain alphabets.")
-        if Category.objects.filter(name=value, shop=user).exists():
+        if Category.objects.filter(name__iexact=value, shop=user).exists():
             raise serializers.ValidationError("A category with this name already exists in your shop.")
         return value
 
@@ -190,6 +196,8 @@ class CategoryCreateSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
+        if not data.get('name') or not data.get('image') or not data.get('description'):
+            raise serializers.ValidationError("All fields (name, image, and description) must be filled.")
         user = self.context['request'].user
         shop = Shop.objects.get(user=user)
         if not shop.is_verified or not user.is_shop:

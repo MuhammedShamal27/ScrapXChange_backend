@@ -13,4 +13,6 @@ urlpatterns = [
     path('',HomePageView.as_view(),name='user_home'),
     path('profile/',UserProfileView.as_view(),name='user_profile'),
     path('edit-profile/',EditUserProfileView.as_view(),name='edit_user_profile'),
+    path('shops/',ShopListView.as_view(),name='shop-list'),
+    path('shops/<int:shop_id>/products/', ShopProductListView.as_view(), name='shop-products'),
 ]
