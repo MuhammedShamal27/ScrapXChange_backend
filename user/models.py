@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser,BaseUserManager,PermissionsMixin
+from shop.models import *
 
 # Create your models here.
 
@@ -67,3 +68,27 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.email
+    
+    
+class CollectionRequest(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='collection_requests')
+    shop = models.ForeignKey(Shop, on_delete=models.SET_NULL, null=True, blank=True, related_name='collection_requests')
+    date_requested = models.CharField(max_length=100)  
+    name = models.CharField(max_length=255)
+    address = models.CharField(max_length=255)
+    landmark = models.CharField(max_length=255)
+    pincode = models.CharField(max_length=10)
+    phone = models.CharField(max_length=15)
+    upi = models.CharField(max_length=50)  
+    reject_message = models.CharField(max_length=100)
+    is_accepted = models.BooleanField(default=False)
+    is_rejected = models.BooleanField(default=False)
+    is_scheduled = models.BooleanField(default=False)
+
+    def __str__(self):
+        shop_name = self.shop.shop_name if self.shop else "Deleted Shop"
+        return f"Request by {self.user.email} to {shop_name}"
+
+    
+    
+    

@@ -200,3 +200,16 @@ class ShopProductListView(ListAPIView):
             raise NotFound(detail="Shop not found")
         user = shop.user
         return Category.objects.filter(shop=user).distinct()
+    
+
+class ScrapCollectionRequestView(APIView):
+    permission_classes=[IsAuthenticated]
+
+    def post(self, request):
+        serializer = ScrapCollectionRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            print(serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

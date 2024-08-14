@@ -1,11 +1,11 @@
 from django.db import IntegrityError
-from .models import CustomUser,UserProfile
+from .models import *
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from .generate_otp import *
 from django.core.validators import RegexValidator
 from django.utils import timezone
-import datetime
+from datetime import *
 from shop.models import *
 
 class UserProfilePhoneSerializer(serializers.ModelSerializer):
@@ -320,13 +320,7 @@ class ShopSerializer(serializers.ModelSerializer):
     class Meta:
         model = Shop
         fields = ['id', 'shop_name', 'address', 'place', 'profile_picture']
-        
 
-        
-
-        
-    
-    
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
@@ -342,3 +336,72 @@ class CategorySerializer(serializers.ModelSerializer):
     def get_products(self, category):
         products = Product.objects.filter(category=category)
         return ProductSerializer(products, many=True).data
+    
+    
+class ScrapCollectionRequestSerializer(serializers.ModelSerializer):
+    date_requested = serializers.DateField()  # Updated to DateField
+    name = serializers.CharField()
+    address = serializers.CharField()
+    landmark = serializers.CharField()
+    pincode = serializers.CharField()
+    phone = serializers.CharField()
+    upi = serializers.CharField()
+
+    class Meta:
+        model = CollectionRequest
+        fields = ['date_requested', 'name', 'address', 'landmark', 'pincode', 'phone', 'upi']
+
+    def validate(self, data):
+        # Check if any field is empty
+        for field in self.fields:
+            if not data.get(field):
+                raise serializers.ValidationError("Please fill all the fields.")
+        
+        # Additional validations
+        self.validate_date_requested(data['date_requested'])
+        self.validate_name(data['name'])
+        self.validate_address(data['address'])
+        self.validate_landmark(data['landmark'])
+        self.validate_pincode(data['pincode'])
+        self.validate_phone(data['phone'])
+        self.validate_upi(data['upi'])
+        
+        return data
+
+    def validate_date_requested(self, value):
+        today = datetime.today().date()
+        if value < today or value > today + timedelta(days=7):
+            raise serializers.ValidationError("The date should be within the current day or within a week (no dates before today or after 7 days).")
+        return value
+
+    def validate_name(self, value):
+        if not value.isalpha():
+            raise serializers.ValidationError("The name can only contain alphabets and no spaces.")
+        return value
+
+    def validate_address(self, value):
+        if value and (value[0].isspace() or any(c in "!@#$%^&()_+=<>?/;:'\"[]{}|\\`~" for c in value) and not ('.' in value or ',' in value)):
+            raise serializers.ValidationError("Address cannot start with a space or contain special characters except dot (.) and comma (,).")
+        return value
+
+    def validate_landmark(self, value):
+        if not value.isalpha():
+            raise serializers.ValidationError("The landmark can only contain alphabets and no spaces.")
+        return value
+
+    def validate_pincode(self, value):
+        if not value.isdigit() or len(value) != 6:
+            raise serializers.ValidationError("The pincode must be a 6-digit number.")
+        return value
+
+    def validate_phone(self, value):
+        if not value.isdigit() or len(value) != 10:
+            raise serializers.ValidationError("The phone number should be a 10-digit number.")
+        return value
+
+    def validate_upi(self, value):
+        if " " in value or '@' not in value:
+            raise serializers.ValidationError("The UPI ID should not contain spaces and must include '@'.")
+        return value
+        
+        
