@@ -55,6 +55,7 @@ class CategoryCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         user = self.request.user
+        print("for the test",user.shop.is_verified==True)
         if not user.shop.is_verified==True:
             raise PermissionDenied("Your shop is not verified.")
         serializer.save(shop = user)
@@ -174,3 +175,14 @@ class ProductUpdateView(generics.UpdateAPIView):
             raise PermissionDenied("Only Verified shops can update products.")
         
         serializer.save()
+        
+class ScrapRequestListView(generics.ListAPIView):
+    serializer_class = ScrapRequestListSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        shop = self.request.user.shop
+        print('this is the shop name',shop)
+        return CollectionRequest.objects.filter(shop=shop)
+    
+        

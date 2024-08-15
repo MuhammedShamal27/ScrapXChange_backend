@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-from user.models import CustomUser
+from user.models import *
 from . models import *
 import re
 
@@ -175,11 +175,17 @@ class CategoryCreateSerializer(serializers.ModelSerializer):
 
     def validate_name(self, value):
         user = self.context['request'].user
+        print('the user',user)
+        
         if not value.isalpha():
             raise serializers.ValidationError("Category name should only contain alphabets.")
+        
         if Category.objects.filter(name__iexact=value, shop=user).exists():
             raise serializers.ValidationError("A category with this name already exists in your shop.")
+        
         return value
+
+
 
     def validate_image(self, value):
         if not value or not hasattr(value, 'content_type'):
@@ -315,7 +321,6 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         if not value.isalpha():
             raise serializers.ValidationError("Product name should only contain alphabets.")
-        # Exclude the current instance to avoid false positives when updating
         product_id = self.instance.id if self.instance else None
         if Product.objects.filter(name=value, shop=user).exclude(id=product_id).exists():
             raise serializers.ValidationError("A product with this name already exists in your shop.")
@@ -350,3 +355,13 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         if not shop.is_verified:
             raise serializers.ValidationError("Only verified shops can update products.")
         return data
+    
+    
+class ScrapRequestListSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = CollectionRequest
+        field = "__all__"
+        
+        
+        

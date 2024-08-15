@@ -5,7 +5,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .generate_otp import *
 from django.core.validators import RegexValidator
 from django.utils import timezone
-from datetime import *
+import datetime
 from shop.models import *
 
 class UserProfilePhoneSerializer(serializers.ModelSerializer):
@@ -72,9 +72,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("A user with this email already exists.")
         
         otp=generate_otp()
-        user_profile,created = UserProfile.objects.get_or_create(
+        user_profile , created = UserProfile.objects.get_or_create(
             user=user,
-            defaults={'phone':phone,'otp':otp , 'otp_generated_at':timezone.now()}
+            defaults={'phone':phone,'otp':otp , 'otp_generated_at': timezone.now()}
             )
         send_otp_via_email(user.email,otp)
         return user
