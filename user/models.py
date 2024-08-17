@@ -29,7 +29,7 @@ class CustomUserManager(BaseUserManager):
 class CustomUser(AbstractBaseUser):
     email=models.EmailField(unique=True)
     username=models.CharField(max_length=33,blank=True)
-    password=models.CharField(max_length=33)
+    password=models.CharField(max_length=200)
     is_active=models.BooleanField(default=False)
     is_superuser=models.BooleanField(default=False)
     is_staff=models.BooleanField(default=False)
@@ -72,14 +72,15 @@ class UserProfile(models.Model):
     
 class CollectionRequest(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='collection_requests')
-    shop = models.ForeignKey(Shop, on_delete=models.SET_NULL, null=True, blank=True, related_name='collection_requests')
-    date_requested = models.CharField(max_length=100)  
+    shop = models.ForeignKey(Shop, on_delete=models.CASCADE,  related_name='collection_requests')
+    date_requested = models.DateField()  
     name = models.CharField(max_length=255)
     address = models.CharField(max_length=255)
     landmark = models.CharField(max_length=255)
     pincode = models.CharField(max_length=10)
     phone = models.CharField(max_length=15)
-    upi = models.CharField(max_length=50)  
+    upi = models.CharField(max_length=50)
+    products = models.ManyToManyField(Product, related_name='collection_requests')  
     reject_message = models.CharField(max_length=100)
     is_accepted = models.BooleanField(default=False)
     is_rejected = models.BooleanField(default=False)

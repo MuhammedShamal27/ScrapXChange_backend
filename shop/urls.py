@@ -14,5 +14,5 @@ urlpatterns = [
     path('product-creation/',ProductCreateView.as_view(),name='shop-product-creation'),
     path('product-detail/<int:pk>/', ProductDetailView.as_view(), name='product-detail'), 
     path('product-update/<int:pk>/',ProductUpdateView.as_view(),name='shop-product-update'),
-    path('scrap-requests/',ScrapRequestListView.as_view(),name='scrap-requests-list'),
+    # path('scrap-requests/',ScrapRequestListView.as_view(),name='scrap-requests-list'),
 ]

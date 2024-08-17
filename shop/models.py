@@ -19,13 +19,11 @@ class Shop(models.Model):
         return self.shop_name
     
 class Category(models.Model):
-    name = models.CharField(max_length=33,unique=True)
+    name = models.CharField(max_length=33)
     image = models.ImageField(upload_to='category_pics',blank=True)
     description = models.TextField(blank=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name='categories')
     
-    class Meta:
-        unique_together = ('name','user')
 
     def __str__(self):
         return self.name
@@ -37,8 +35,6 @@ class Product(models.Model):
     image = models.ImageField(upload_to='product_pics',blank=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name='products')
     
-    class Meta:
-        unique_together = ('name' , 'category')
 
     def __str__(self):
         return self.name

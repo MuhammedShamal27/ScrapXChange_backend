@@ -44,21 +44,20 @@ class CategoryListView(generics.ListAPIView):
     def get_queryset(self):
         if not self.request.user.is_shop:
             raise PermissionDenied("You do not have permission to access this resource.")
-        return Category.objects.filter(shop=self.request.user)
+        print('the user',self.request.user)
+        return Category.objects.filter(user=self.request.user)
     
 
-@method_decorator(csrf_exempt,name='dispatch') 
 
 class CategoryCreateView(generics.CreateAPIView):
     serializer_class = CategoryCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
-
     def perform_create(self, serializer):
         user = self.request.user
-        print("for the test",user.shop.is_verified==True)
-        if not user.shop.is_verified==True:
+        if not user.shop.is_verified:
             raise PermissionDenied("Your shop is not verified.")
-        serializer.save(shop = user)
+        serializer.save(user=user)
+
         
 class CategoryDetailView(generics.RetrieveAPIView):
     queryset = Category.objects.all()
@@ -67,7 +66,8 @@ class CategoryDetailView(generics.RetrieveAPIView):
 
     def get_object(self):
         category = super().get_object()
-        if category.shop != self.request.user:
+        print('category user',category,category.user,)
+        if category.user != self.request.user:
             raise PermissionDenied("You do not have permission to access this category.")
         return category
         
@@ -80,37 +80,10 @@ class CategoryUpdateView(generics.UpdateAPIView):
         user = self.request.user
         
         category = self.get_object()
-        if category.shop != user:
+        print('category user',category,category.user,user)
+        if category.user != user:
             raise PermissionDenied("You do not have permission to edit this category.")
         serializer.save()
-
-# class CategoryUpdateView(generics.UpdateAPIView):
-#     queryset = Category.objects.all()
-#     serializer_class = CategoryUpdateSerializer
-#     permission_classes = [permissions.IsAuthenticated]
-
-#     def perform_update(self, serializer):
-#         user =self.request.user
-#         print("the user",user)
-
-#         try:
-#             shop =Shop.objects.get(user=user)
-#             print("the shop",shop)
-#         except Shop.DoesNotExist:
-#             raise PermissionDenied("Shop assoiciated with the user does  not exist.")
-        
-#         category = self.get_object()
-#         print("this is the category",category)
-#         print("this is the category shop",category.shop)
-
-#         if category.shop !=user:
-#             raise PermissionDenied("You do not have permission to edit this category.")
-        
-#         if not shop.is_verified==True or not user.is_shop==True:
-#             raise PermissionDenied("Only verified shops can edit categories.")
-        
-#         serializer.save()
-
 
 class ProductListView(generics.ListAPIView):
     serializer_class = ProductSerializer
@@ -118,12 +91,15 @@ class ProductListView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
+        print(user)
         try:
+            
             shop = Shop.objects.get(user=user)
+            print('the user i get',user)
         except Shop.DoesNotExist:
             raise PermissionDenied("Shop associated with this user does not exist.")
         
-        return Product.objects.filter(shop=user)
+        return Product.objects.filter(user=shop.user)
     
 
 class ProductCreateView(generics.CreateAPIView):
@@ -140,7 +116,7 @@ class ProductCreateView(generics.CreateAPIView):
         if not shop.is_verified==True:
             raise PermissionDenied("Only verified shops can create products.")
         
-        serializer.save(shop=user)
+        serializer.save(user=user)
 
 class ProductDetailView(generics.RetrieveAPIView):
     queryset = Product.objects.all()
@@ -149,7 +125,7 @@ class ProductDetailView(generics.RetrieveAPIView):
 
     def get_object(self):
         product = super().get_object()
-        if product.shop != self.request.user:
+        if product.user != self.request.user:
             raise PermissionDenied("You do not have permission to access this product.")
         return product
 
@@ -168,7 +144,7 @@ class ProductUpdateView(generics.UpdateAPIView):
             raise PermissionDenied("Shop associated with this user does not exist.")
         
         product = self.get_object()
-        if product.shop != user:
+        if product.user != user:
             raise PermissionDenied("You do not have permission to edit this product.")
         
         if not shop.is_verified:
@@ -176,13 +152,13 @@ class ProductUpdateView(generics.UpdateAPIView):
         
         serializer.save()
         
-class ScrapRequestListView(generics.ListAPIView):
-    serializer_class = ScrapRequestListSerializer
-    permission_classes = [IsAuthenticated]
+# class ScrapRequestListView(generics.ListAPIView):
+#     serializer_class = ScrapRequestListSerializer
+#     permission_classes = [IsAuthenticated]
     
-    def get_queryset(self):
-        shop = self.request.user.shop
-        print('this is the shop name',shop)
-        return CollectionRequest.objects.filter(shop=shop)
+#     def get_queryset(self):
+#         shop = self.request.user.shop
+#         print('this is the shop name',shop)
+#         return CollectionRequest.objects.filter(shop=shop)
     
         

@@ -10,6 +10,7 @@ from .generate_otp import *
 from rest_framework.permissions import IsAuthenticated,AllowAny
 from rest_framework.exceptions import NotFound
 import logging
+from rest_framework import generics
 
 # Create your views here.
 
@@ -199,17 +200,29 @@ class ShopProductListView(ListAPIView):
         except Shop.DoesNotExist:
             raise NotFound(detail="Shop not found")
         user = shop.user
-        return Category.objects.filter(shop=user).distinct()
-    
+        return Category.objects.filter(user=user).distinct()
 
+
+  
 class ScrapCollectionRequestView(APIView):
-    permission_classes=[IsAuthenticated]
-
     def post(self, request):
-        serializer = ScrapCollectionRequestSerializer(data=request.data)
+        serializer = CollectionRequestSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(user=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            print(serializer.errors)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            # Handle the valid data (e.g., save to the database)
+            return Response({"success": "Scrap collection request submitted"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+        
+# class ScrapCollectionRequestView(APIView):
+#     permission_classes=[IsAuthenticated]
+
+#     def post(self, request):
+#         print('Incoming request data',request.data)
+#         serializer = ScrapCollectionRequestSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save(user=request.user)
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         else:
+#             print('the serilaizer error',serializer.errors)
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
