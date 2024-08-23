@@ -356,12 +356,58 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Only verified shops can update products.")
         return data
     
+
+
+class ProductDetailsSerilaizer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = "__all__"
+        
+        
+class ScrapRequestListSerializer(serializers.ModelSerializer):
     
-# class ScrapRequestListSerializer(serializers.ModelSerializer):
+    products=ProductDetailsSerilaizer(many=True)
     
-#     class Meta:
-#         model = CollectionRequest
-#         field = "__all__"
+    class Meta:
+        model = CollectionRequest
+        fields = "__all__"
+    
         
+class SheduleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CollectionRequest
+        fields = [] 
+
+    def validate(self, data):
+        instance = self.instance
+        shop = self.context['request'].user.shop
+        if CollectionRequest.objects.filter(scheduled_date=instance.date_requested, shop=shop, is_scheduled=True).count() >= 5:
+            raise serializers.ValidationError("There are no more slots for the requested date. Please reschedule.")
+
+        return data
+    
+class RescheduleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CollectionRequest
+        fields = ['scheduled_date']
+
+    def validate_scheduled_date(self, value):
+        shop = self.context['request'].user.shop
+        if CollectionRequest.objects.filter(scheduled_date=value, shop=shop, is_scheduled=True).count() >= 5:
+            raise serializers.ValidationError("There are no more slots for the requested date. Please reschedule.")
+        return value
+
+    
+
+class RequestSeduledSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CollectionRequest
+        fields =['user','is_accepted','is_sheduled']
+    
+    
+class TodaySheduledSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CollectionRequest
+        fields = "__all__"
         
-        
+    

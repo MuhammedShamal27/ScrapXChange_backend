@@ -14,5 +14,11 @@ urlpatterns = [
     path('product-creation/',ProductCreateView.as_view(),name='shop-product-creation'),
     path('product-detail/<int:pk>/', ProductDetailView.as_view(), name='product-detail'), 
     path('product-update/<int:pk>/',ProductUpdateView.as_view(),name='shop-product-update'),
-    # path('scrap-requests/',ScrapRequestListView.as_view(),name='scrap-requests-list'),
+    path('scrap-requests/',ScrapRequestListView.as_view(),name='scrap-requests-list'),
+    path('scrap-request-details/<int:pk>/',ScrapRequestDetailsView.as_view(),name='scrap-requests-details'),
+    path('schedule-request/<int:pk>/',ScheduleRequestView.as_view(),name='schedule-request'),
+    path('reschedule-request/<int:pk>/',RescheduleRequestView.as_view(),name='schedule-request'),
+    path('reject-request/<int:pk>/',RejectRequestView.as_view(),name='reject-request'),
+    
+    
 ]

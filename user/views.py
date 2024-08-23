@@ -204,15 +204,15 @@ class ShopProductListView(ListAPIView):
 
 
   
-class ScrapCollectionRequestView(APIView):
-    def post(self, request):
+class CollectionRequestCreateView(APIView):
+    def post(self, request, *args, **kwargs):
+        print('the data',request.data)
         serializer = CollectionRequestSerializer(data=request.data)
         if serializer.is_valid():
-            # Handle the valid data (e.g., save to the database)
-            return Response({"success": "Scrap collection request submitted"}, status=status.HTTP_201_CREATED)
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-        
+  
         
 # class ScrapCollectionRequestView(APIView):
 #     permission_classes=[IsAuthenticated]

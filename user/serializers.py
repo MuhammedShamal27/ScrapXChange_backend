@@ -339,31 +339,43 @@ class CategorySerializer(serializers.ModelSerializer):
         return ProductSerializer(products, many=True).data
     
 
-
-
-class FetchProductSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Product
-        fields = ['id']
-
 class CollectionRequestSerializer(serializers.ModelSerializer):
-    products = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
+    products = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), many=True)
+
     class Meta:
         model = CollectionRequest
-        fields = ['shop', 'date_requested', 'name', 'address', 'landmark', 'pincode', 'phone', 'upi','products']
+        fields = ['shop', 'date_requested', 'name', 'address', 'landmark', 'pincode', 'phone', 'upi', 'products']
+        
+    def to_internal_value(self, data):
+        data = data.copy()
+        products_data = data.getlist('products[]')
+        print('the internal value',products_data)
+        if products_data:
+            data.setlist('products', products_data)
+        return super().to_internal_value(data)
 
-     
     def create(self, validated_data):
-        product_ids = validated_data.pop('products',[])
-        print("Product IDs:", product_ids)
-        print("Validated Data:", validated_data)  # Log validated data
-        if not isinstance(product_ids, list) or not product_ids:
-            raise serializers.ValidationError({"products": "This field is required."})
-        user = self.context['request'].user
-        collection_request = CollectionRequest.objects.create(user=user,**validated_data)
-        products = Product.objects.filter(id__in=product_ids)
-        collection_request.products.set(products)
-        return collection_request
+        products_data = validated_data.pop('products')
+        print('before products data',products_data)
+        scrap_request = CollectionRequest.objects.create(**validated_data)
+        print('after products data',products_data)
+        for products_id in products_data:
+            scrap_request.products.add(products_id)
+        return scrap_request
+
+
+
+    # def create(self, validated_data):
+    #     product_ids = validated_data.pop('products',[])
+    #     print("Product IDs:", product_ids)
+    #     print("Validated Data:", validated_data)  # Log validated data
+    #     # if not isinstance(product_ids, list) or not product_ids:
+    #     #     raise serializers.ValidationError({"products": "This field is required ghfdgh."})
+    #     user = self.context['request'].user
+    #     # collection_request = CollectionRequest.objects.create(user=user,**validated_data)
+    #     products = Product.objects.filter(id__in=product_ids)
+    #     collection_request.products.set(products)
+    #     return collection_request
 
     
 # class ScrapCollectionRequestSerializer(serializers.ModelSerializer):

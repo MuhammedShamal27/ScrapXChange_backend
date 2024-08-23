@@ -73,7 +73,8 @@ class UserProfile(models.Model):
 class CollectionRequest(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='collection_requests')
     shop = models.ForeignKey(Shop, on_delete=models.CASCADE,  related_name='collection_requests')
-    date_requested = models.DateField()  
+    date_requested = models.DateField()
+    scheduled_date=models.DateField(null=True , blank=True)
     name = models.CharField(max_length=255)
     address = models.CharField(max_length=255)
     landmark = models.CharField(max_length=255)
@@ -81,7 +82,7 @@ class CollectionRequest(models.Model):
     phone = models.CharField(max_length=15)
     upi = models.CharField(max_length=50)
     products = models.ManyToManyField(Product, related_name='collection_requests')  
-    reject_message = models.CharField(max_length=100)
+    reject_message = models.CharField(max_length=100 , blank=True)
     is_accepted = models.BooleanField(default=False)
     is_rejected = models.BooleanField(default=False)
     is_scheduled = models.BooleanField(default=False)

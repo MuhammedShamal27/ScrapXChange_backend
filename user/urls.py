@@ -15,5 +15,5 @@ urlpatterns = [
     path('edit-profile/',EditUserProfileView.as_view(),name='edit_user_profile'),
     path('shops/',ShopListView.as_view(),name='shop-list'),
     path('shops/<int:shop_id>/products/', ShopProductListView.as_view(), name='shop-products'),
-    path('scrap-collection-request/',ScrapCollectionRequestView.as_view(),name='scrap-colection-request')
+    path('scrap-collection-request/',CollectionRequestCreateView.as_view(),name='scrap-colection-request')
 ]

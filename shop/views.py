@@ -152,13 +152,88 @@ class ProductUpdateView(generics.UpdateAPIView):
         
         serializer.save()
         
-# class ScrapRequestListView(generics.ListAPIView):
-#     serializer_class = ScrapRequestListSerializer
-#     permission_classes = [IsAuthenticated]
+class ScrapRequestListView(generics.ListAPIView):
+    serializer_class = ScrapRequestListSerializer
+    permission_classes = [IsAuthenticated]
     
-#     def get_queryset(self):
-#         shop = self.request.user.shop
-#         print('this is the shop name',shop)
-#         return CollectionRequest.objects.filter(shop=shop)
+    def get_queryset(self):
+        shop = self.request.user.shop
+        if not shop:
+            return CollectionRequest.objects.none()
+        print('this is the shop name',shop)
+        return CollectionRequest.objects.filter(shop=shop , is_accepted=False , is_rejected=False , is_scheduled=False)
+
     
+        
+class ScrapRequestDetailsView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class=ScrapRequestListSerializer
+    lookup_field ='pk'
+    
+    def get(self,request,pk, *args, **kwargs):
+        if not self.request.user.is_shop:
+            raise PermissionDenied('Access to this page is only for the verified shop.')
+        try:
+            scrap_request = CollectionRequest.objects.get(pk=pk, shop=request.user.shop)
+            serializer = self.serializer_class(scrap_request)
+            return Response(serializer.data)
+        except CollectionRequest.DoesNotExist:
+            return Response({"error": "Scrap request not found."}, status=404)
+        
+        
+class ScheduleRequestView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = SheduleSerializer
+    
+    def post(self,request,pk , *args, **kwargs):
+        if not self.request.user.is_shop:
+            raise PermissionDenied('Access to this page is only for the verified shop.')
+        try:
+            scrap_request= CollectionRequest.objects.get(pk=pk , shop=request.user.shop)
+            serializer = self.serializer_class(scrap_request,data=request.data,context={'request':request})
+            if not serializer.is_valid():
+                print(serializer.errors)  
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            scrap_request.is_scheduled = True
+            scrap_request.scheduled_date = scrap_request.date_requested
+            scrap_request.save()
+            return Response({'message':'Request shedule succesfully'})
+        except CollectionRequest.DoesNotExist:
+            return Response({"error":"Scrap request not found."},status=status.HTTP_404_NOT_FOUND)        
+            
+class RescheduleRequestView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = RescheduleSerializer
+
+    def post(self, request, pk, *args, **kwargs):
+        if not self.request.user.is_shop:
+            raise PermissionDenied('Access to this page is only for the verified shop.')
+
+        try:
+            scrap_request = CollectionRequest.objects.get(pk=pk, shop=request.user.shop)
+        except CollectionRequest.DoesNotExist:
+            return Response({"error": "Scrap request not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.serializer_class(scrap_request, data=request.data, partial=True, context={'request': request})
+        if not serializer.is_valid():
+            print(serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response({'message': 'Request rescheduled successfully'})
+    
+class RejectRequestView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ScrapRequestListSerializer
+    
+    def post(self,request,pk,*args, **kwargs):
+        if not self.request.user.is_shop:
+            raise PermissionDenied('Access to this page is only for the verified shop.')
+        try:
+            scrap_request = CollectionRequest.objects.get(pk=pk , shop=request.user.shop)
+            scrap_request.is_rejected=True
+            scrap_request.reject_message=request.data.get('reason','')
+            scrap_request.save()
+            return Response({'message':'Request has rejected.'})
+        except CollectionRequest.DoesNotExist:
+            return Response({'error':'Scrap request not found.'},status=status.HTTP_404_NOT_FOUND)
         
