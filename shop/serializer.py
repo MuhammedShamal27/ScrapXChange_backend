@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate
 from user.models import *
 from . models import *
 import re
+from datetime import *
 
 
 class ShopRegisterSerializer(serializers.ModelSerializer):
@@ -381,6 +382,10 @@ class SheduleSerializer(serializers.ModelSerializer):
     def validate(self, data):
         instance = self.instance
         shop = self.context['request'].user.shop
+        
+        if instance.date_requested < date.today():
+            raise serializers.ValidationError("The requested date is in the past. Please reschedule to a coming date.")
+        
         if CollectionRequest.objects.filter(scheduled_date=instance.date_requested, shop=shop, is_scheduled=True).count() >= 5:
             raise serializers.ValidationError("There are no more slots for the requested date. Please reschedule.")
 
@@ -393,21 +398,30 @@ class RescheduleSerializer(serializers.ModelSerializer):
 
     def validate_scheduled_date(self, value):
         shop = self.context['request'].user.shop
+        today = date.today()
+        one_week_from_today = today + timedelta(weeks=1)
+        
+        print('the value',value)
+        if value < today:
+            raise serializers.ValidationError("The selected date is in the past. Please choose a date from today or in the coming date.")
+        
+        if value > one_week_from_today:
+            raise serializers.ValidationError("The selected date cannot be more than a week from today. Please choose a date within the next week.")
+        
         if CollectionRequest.objects.filter(scheduled_date=value, shop=shop, is_scheduled=True).count() >= 5:
             raise serializers.ValidationError("There are no more slots for the requested date. Please reschedule.")
         return value
 
-    
 
-class RequestSeduledSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CollectionRequest
-        fields =['user','is_accepted','is_sheduled']
-    
     
 class TodaySheduledSerializer(serializers.ModelSerializer):
+    
+    products = serializers.StringRelatedField(many=True)
+    
     class Meta:
         model = CollectionRequest
         fields = "__all__"
+        
+
         
     

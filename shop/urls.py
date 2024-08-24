@@ -17,8 +17,8 @@ urlpatterns = [
     path('scrap-requests/',ScrapRequestListView.as_view(),name='scrap-requests-list'),
     path('scrap-request-details/<int:pk>/',ScrapRequestDetailsView.as_view(),name='scrap-requests-details'),
     path('schedule-request/<int:pk>/',ScheduleRequestView.as_view(),name='schedule-request'),
-    path('reschedule-request/<int:pk>/',RescheduleRequestView.as_view(),name='schedule-request'),
+    path('reschedule-request/<int:pk>/',RescheduleRequestView.as_view(),name='reschedule-request'),
     path('reject-request/<int:pk>/',RejectRequestView.as_view(),name='reject-request'),
-    
-    
+    path('today-pendings/',TodayPendingRequestsView.as_view(),name='today-pendings'),
+    path('pending-details/<int:id>/',PendingRequestsDetailsView.as_view(),name='pending-details'),
 ]

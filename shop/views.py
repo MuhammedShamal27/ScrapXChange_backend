@@ -7,6 +7,8 @@ from rest_framework.permissions import AllowAny,IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from datetime import *
+from django.utils import timezone
 # Create your views here.
 
 
@@ -213,13 +215,15 @@ class RescheduleRequestView(APIView):
             scrap_request = CollectionRequest.objects.get(pk=pk, shop=request.user.shop)
         except CollectionRequest.DoesNotExist:
             return Response({"error": "Scrap request not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = self.serializer_class(scrap_request, data=request.data, partial=True, context={'request': request})
+        serializer = self.serializer_class(scrap_request, data=request.data, context={'request': request})
+        print('the serilaizer',serializer)
         if not serializer.is_valid():
-            print(serializer.errors)
+            print('this is an error',serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        scrap_request.is_scheduled = True
         serializer.save()
         return Response({'message': 'Request rescheduled successfully'})
+    
     
 class RejectRequestView(APIView):
     permission_classes = [IsAuthenticated]
@@ -237,3 +241,21 @@ class RejectRequestView(APIView):
         except CollectionRequest.DoesNotExist:
             return Response({'error':'Scrap request not found.'},status=status.HTTP_404_NOT_FOUND)
         
+        
+class TodayPendingRequestsView(generics.ListAPIView):
+    permission_classes=[IsAuthenticated]
+    serializer_class = TodaySheduledSerializer
+
+    def get_queryset(self):
+        today = timezone.now().date()
+        return CollectionRequest.objects.filter(scheduled_date__lte=today, is_accepted=False )
+        
+class PendingRequestsDetailsView(generics.RetrieveAPIView):
+    permission_classes=[IsAuthenticated]
+    serializer_class = TodaySheduledSerializer
+    lookup_field = 'id'
+
+    def get_queryset(self):
+        details=CollectionRequest.objects.filter( shop=self.request.user.shop)
+        print('the deatils',details)
+        return details
