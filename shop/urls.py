@@ -21,4 +21,5 @@ urlpatterns = [
     path('reject-request/<int:pk>/',RejectRequestView.as_view(),name='reject-request'),
     path('today-pendings/',TodayPendingRequestsView.as_view(),name='today-pendings'),
     path('pending-details/<int:id>/',PendingRequestsDetailsView.as_view(),name='pending-details'),
+    path('scrap-collected/<int:id>/',ScrapCollectionView.as_view(),name='scrap-collected'),
 ]

@@ -422,6 +422,54 @@ class TodaySheduledSerializer(serializers.ModelSerializer):
         model = CollectionRequest
         fields = "__all__"
         
+        
+
+class TransactionProductSerializer(serializers.ModelSerializer):
+    product_id = serializers.IntegerField()
+
+    class Meta:
+        model = TransactionProduct
+        fields = ['product_id', 'quantity']
+
+class ScrapCollectionSerializer(serializers.ModelSerializer):
+    transaction_products = TransactionProductSerializer(many=True,write_only=True)
+    collection_request_id = serializers.IntegerField()
+    
+    class Meta:
+        model = Transaction
+        fields = ['collection_request_id', 'transaction_products']
+
+
+    def create(self, validated_data):
+        transaction_products_data = validated_data.pop('transaction_products')
+        
+        total_quantity = 0
+        total_price = 0
+        
+        # Calculate total quantity and total price before creating the Transaction
+        for product_data in transaction_products_data:
+            product = Product.objects.get(id=product_data['product_id'])
+            quantity = product_data['quantity']
+            total_quantity += quantity
+            total_price += quantity * product.price
+        
+        transaction = Transaction.objects.create(
+            collection_request_id=validated_data['collection_request_id'],
+            date_picked=date.today(),
+            total_quantity=total_quantity,
+            total_price=total_price
+        )
+        
+        for product_data in transaction_products_data:
+            TransactionProduct.objects.create(
+                transaction=transaction,
+                product_id=product_data['product_id'],
+                quantity=product_data['quantity']
+            )
+        
+        return transaction
+
+    
 
         
     

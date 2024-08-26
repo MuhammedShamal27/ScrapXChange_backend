@@ -259,3 +259,44 @@ class PendingRequestsDetailsView(generics.RetrieveAPIView):
         details=CollectionRequest.objects.filter( shop=self.request.user.shop)
         print('the deatils',details)
         return details
+    
+    
+class ScrapCollectionView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ScrapCollectionSerializer
+
+    def post(self, request, *args, **kwargs):
+        shop = self.request.user.shop  
+        data = request.data
+        print("the data comming ",data)
+        collection_request_id = data.get('id')
+        print('the collectioin reqeust id',collection_request_id)
+        try:
+            collection_request = CollectionRequest.objects.get(id=collection_request_id)
+        except CollectionRequest.DoesNotExist:
+            return Response({'error': 'Collection request not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if collection_request.shop != shop:
+            return Response({'error': 'This collection request does not belong to your shop.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        transaction_products = []
+        form_data = data.getlist('formData')
+        
+        for product in form_data:
+            product_id = product['id']
+            quantity = product['quantity']
+            transaction_products.append({'product_id': product_id, 'quantity': quantity})
+        
+        serializer_data = {
+            'collection_request_id': collection_request_id,
+            'transaction_products': transaction_products
+        }
+        
+        serializer = self.serializer_class(data=serializer_data)
+        print('the serializer',serializer)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        
