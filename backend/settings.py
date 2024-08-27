@@ -177,3 +177,7 @@ AUTHENTICATIONS_BACKENDS = [
     'django.contirb.auth.backends.ModelBackend',
     'User.backends.EmailBackend',
 ]
+
+
+RAZORPAY_API_KEY = 'rzp_test_Vu3ybk6YCPR1WK'
+RAZORPAY_API_SECRET = 'kbEshpFjqHxwUnG2vsZ5VZ5T'

@@ -9,6 +9,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from datetime import *
 from django.utils import timezone
+import razorpay
+
+
 # Create your views here.
 
 
@@ -268,9 +271,9 @@ class ScrapCollectionView(APIView):
     def post(self, request, *args, **kwargs):
         shop = self.request.user.shop  
         data = request.data
-        print("the data comming ",data)
+
         collection_request_id = data.get('id')
-        print('the collectioin reqeust id',collection_request_id)
+
         try:
             collection_request = CollectionRequest.objects.get(id=collection_request_id)
         except CollectionRequest.DoesNotExist:
@@ -278,25 +281,128 @@ class ScrapCollectionView(APIView):
 
         if collection_request.shop != shop:
             return Response({'error': 'This collection request does not belong to your shop.'}, status=status.HTTP_403_FORBIDDEN)
-        
-        transaction_products = []
-        form_data = data.getlist('formData')
-        
-        for product in form_data:
-            product_id = product['id']
-            quantity = product['quantity']
-            transaction_products.append({'product_id': product_id, 'quantity': quantity})
-        
+
+        products = []
+        index = 0
+
+        while True:
+            product_id_key = f'formData[{index}][id]'
+            quantity_key = f'formData[{index}][quantity]'
+            if product_id_key in data and quantity_key in data:
+                product_data = {
+                    'product_id': data[product_id_key],
+                    'quantity': data[quantity_key]
+                }
+                products.append(product_data)
+                index += 1
+            else:
+                break
+
         serializer_data = {
             'collection_request_id': collection_request_id,
-            'transaction_products': transaction_products
+            'transaction_products': products,
         }
-        
+
         serializer = self.serializer_class(data=serializer_data)
-        print('the serializer',serializer)
+
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            transaction = serializer.save()
+            print('the details of the transactions',transaction)
+            response_data = ScrapCollectionSerializer(transaction).data
+            print('the response data',response_data)
+            return Response(response_data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-        
+
+
+class ConfirmCollectionView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ConfirmCollectionSerializer
+    
+    def get(self, request, id, *args, **kwargs):
+        print(f"Request received for transaction id: {id}")
+        try:
+            transaction = Transaction.objects.get(id=id)
+            print(f"Transaction found: {transaction}")
+        except Transaction.DoesNotExist:
+            print(f"Transaction with id {id} not found.")
+            return Response({'error': 'Transaction not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.serializer_class(transaction)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+class PaymentCashView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PaymentSuccessfullSerializer
+
+    def post(self, request, id):
+        try:
+            transaction = Transaction.objects.get(id=id)
+            transaction.payment_method = 'cash'
+            transaction.save()
+            serializer = self.serializer_class(transaction)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Transaction.DoesNotExist:
+            return Response({'error': 'Transaction not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+class CreateRazorpayOrderView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id): 
+        print('the request data',request.data)
+        # Accept the transaction ID as a parameter
+        client = razorpay.Client(auth=(settings.RAZORPAY_API_KEY, settings.RAZORPAY_API_SECRET))
+        try:
+            transaction = Transaction.objects.get(id=id)
+            amount = int(transaction.total_price * 100)  # Convert to paise
+
+            razorpay_order = client.order.create({
+                "amount": amount,
+                "currency": "INR",
+                "payment_capture": "1"
+            })
+            transaction.razorpay_order_id = razorpay_order['id']
+            transaction.save()
+            return Response({
+                'order_id': razorpay_order['id'],
+                'amount': razorpay_order['amount'],
+                'currency': razorpay_order['currency']
+            }, status=status.HTTP_200_OK)
+        except Transaction.DoesNotExist:
+            return Response({'error': 'Transaction not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class VerifyPaymentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        client = razorpay.Client(auth=(settings.RAZORPAY_API_KEY, settings.RAZORPAY_API_SECRET))
+        print('Received payment verification data:', request.data)
+        params_dict = {
+            'razorpay_order_id': request.data.get('razorpay_order_id'),
+            'razorpay_payment_id': request.data.get('razorpay_payment_id'),
+            'razorpay_signature': request.data.get('razorpay_signature')
+        }
+
+        try:
+            # Verifying the signature
+            client.utility.verify_payment_signature(params_dict)
+            
+            transaction = Transaction.objects.get(razorpay_order_id=request.data.get('razorpay_order_id'))
+            transaction.payment_method = 'upi'
+            transaction.razorpay_order_id = request.data.get('razorpay_order_id')
+            transaction.payment_id = request.data.get('razorpay_payment_id')
+            transaction.save()
+
+            return Response({'status': 'success'}, status=status.HTTP_200_OK)
+        except razorpay.errors.SignatureVerificationError:
+            print('Signature verification failed.')
+            return Response({'status': 'failure'}, status=status.HTTP_400_BAD_REQUEST)
+        except Transaction.DoesNotExist:
+            print('Transaction not found for order ID:', request.data.get('razorpay_order_id'))
+            return Response({'error': 'Transaction not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print('An error occurred:', str(e))
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

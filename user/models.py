@@ -102,20 +102,22 @@ class TransactionProduct(models.Model):
 
 
 class Transaction(models.Model):
+    PAYMENT_METHOD_CHOICES = [
+        ('cash', 'Cash'),
+        ('upi', 'UPI'),
+    ]
     collection_request = models.ForeignKey(CollectionRequest, on_delete=models.CASCADE, related_name='transactions')
     products = models.ManyToManyField(Product, through=TransactionProduct)
     total_quantity = models.IntegerField(null=True, blank=True)
     total_price = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
     date_picked = models.DateField()
+    payment_method = models.CharField(max_length=100 , choices=PAYMENT_METHOD_CHOICES)
+    payment_id=models.CharField(max_length=100,null=True,blank=True)
+    razorpay_order_id = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return f"Transaction for {self.collection_request.user.email} at {self.collection_request.shop.shop_name}"
 
-    def calculate_totals(self):
-        total_quantity = sum(item.quantity for item in self.transaction_products.all())
-        total_price = sum(item.quantity * item.product.price for item in self.transaction_products.all())
-        self.total_quantity = total_quantity
-        self.total_price = total_price
-        self.save()
+
     
     

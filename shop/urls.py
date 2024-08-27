@@ -22,4 +22,10 @@ urlpatterns = [
     path('today-pendings/',TodayPendingRequestsView.as_view(),name='today-pendings'),
     path('pending-details/<int:id>/',PendingRequestsDetailsView.as_view(),name='pending-details'),
     path('scrap-collected/<int:id>/',ScrapCollectionView.as_view(),name='scrap-collected'),
+    path('confirm-collection/<int:id>/',ConfirmCollectionView.as_view(),name='confirm-collection'),
+    path('payment-cash/<int:id>/',PaymentCashView.as_view(),name='payment-cash'),
+    path('create-razorpay-order/<int:id>/', CreateRazorpayOrderView.as_view(), name='create-razorpay-order'),
+    path('verify-payment/',VerifyPaymentView.as_view(),name='verify-payment'),
+    
+    
 ]

@@ -255,7 +255,7 @@ class CategoryUpdateSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         instance.name = validated_data.get('name', instance.name)
         instance.image = validated_data.get('image', instance.image)
-        instance.description = validated_data.get('description', instance.description)  # Fixed typo here
+        instance.description = validated_data.get('description', instance.description)  
         instance.save()
         return instance
 
@@ -432,44 +432,70 @@ class TransactionProductSerializer(serializers.ModelSerializer):
         fields = ['product_id', 'quantity']
 
 class ScrapCollectionSerializer(serializers.ModelSerializer):
-    transaction_products = TransactionProductSerializer(many=True,write_only=True)
+    transaction_products = TransactionProductSerializer(many=True, write_only=True)
     collection_request_id = serializers.IntegerField()
-    
+
     class Meta:
         model = Transaction
-        fields = ['collection_request_id', 'transaction_products']
-
+        fields = ['id', 'collection_request_id', 'transaction_products', 'total_quantity', 'total_price']
 
     def create(self, validated_data):
+        collection_request_id = validated_data.get('collection_request_id')
         transaction_products_data = validated_data.pop('transaction_products')
-        
+
+        collection_request = CollectionRequest.objects.get(id=collection_request_id)
         total_quantity = 0
         total_price = 0
         
-        # Calculate total quantity and total price before creating the Transaction
+        transaction = Transaction.objects.create(
+            collection_request=collection_request,
+            date_picked=date.today(),
+        )
+
         for product_data in transaction_products_data:
             product = Product.objects.get(id=product_data['product_id'])
-            quantity = product_data['quantity']
+            quantity = int(product_data['quantity'])
             total_quantity += quantity
             total_price += quantity * product.price
-        
-        transaction = Transaction.objects.create(
-            collection_request_id=validated_data['collection_request_id'],
-            date_picked=date.today(),
-            total_quantity=total_quantity,
-            total_price=total_price
-        )
-        
-        for product_data in transaction_products_data:
+
             TransactionProduct.objects.create(
                 transaction=transaction,
-                product_id=product_data['product_id'],
-                quantity=product_data['quantity']
+                product=product,
+                quantity=quantity
             )
-        
+
+        transaction.total_quantity = total_quantity
+        transaction.total_price = total_price
+        transaction.save()
+
         return transaction
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'name']
 
-    
+class ProductSerializer(serializers.ModelSerializer):
+    category = CategorySerializer()
 
+    class Meta:
+        model = Product
+        fields = ['id', 'name', 'price', 'category']
+
+class TransactionProductSerializer(serializers.ModelSerializer):
+    product = ProductSerializer()
+
+    class Meta:
+        model = TransactionProduct
+        fields = ['product', 'quantity']
+
+class ConfirmCollectionSerializer(serializers.ModelSerializer):
+    transaction_products = TransactionProductSerializer(many=True)
+
+    class Meta:
+        model = Transaction
+        fields = ['id', 'total_quantity', 'total_price', 'date_picked',  'transaction_products']
         
-    
+class PaymentSuccessfullSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Transaction
+        fields=['id','payment_method','payment_id','razorpay_order_id']
