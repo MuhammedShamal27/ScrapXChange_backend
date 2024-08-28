@@ -353,6 +353,42 @@ class CollectionRequestSerializer(serializers.ModelSerializer):
         if products_data:
             data.setlist('products', products_data)
         return super().to_internal_value(data)
+    
+    def validate_date_requested(self, value):
+        today = date.today()
+        if value < today or value > today + timedelta(days=7):
+            raise serializers.ValidationError("The date should be within the current day or within a week (no dates before today or after 7 days).")
+        return value
+
+    def validate_name(self, value):
+        if not value.isalpha():
+            raise serializers.ValidationError("The name can only contain alphabets and no spaces.")
+        return value
+
+    def validate_address(self, value):
+        if value and (value[0].isspace() or any(c in "!@#$%^&()_+=<>?/;:'\"[]{}|\\`~" for c in value) and not ('.' in value or ',' in value)):
+            raise serializers.ValidationError("Address cannot start with a space or contain special characters except dot (.) and comma (,).")
+        return value
+
+    def validate_landmark(self, value):
+        if not value.isalpha():
+            raise serializers.ValidationError("The landmark can only contain alphabets and no spaces.")
+        return value
+
+    def validate_pincode(self, value):
+        if not value.isdigit() or len(value) != 6:
+            raise serializers.ValidationError("The pincode must be a 6-digit number.")
+        return value
+
+    def validate_phone(self, value):
+        if not value.isdigit() or len(value) != 10:
+            raise serializers.ValidationError("The phone number should be a 10-digit number.")
+        return value
+
+    def validate_upi(self, value):
+        if " " in value or '@' not in value:
+            raise serializers.ValidationError("The UPI ID should not contain spaces and must include '@'.")
+        return value
 
     def create(self, validated_data):
         products_data = validated_data.pop('products')
@@ -364,18 +400,6 @@ class CollectionRequestSerializer(serializers.ModelSerializer):
         return scrap_request
 
 
-
-    # def create(self, validated_data):
-    #     product_ids = validated_data.pop('products',[])
-    #     print("Product IDs:", product_ids)
-    #     print("Validated Data:", validated_data)  # Log validated data
-    #     # if not isinstance(product_ids, list) or not product_ids:
-    #     #     raise serializers.ValidationError({"products": "This field is required ghfdgh."})
-    #     user = self.context['request'].user
-    #     # collection_request = CollectionRequest.objects.create(user=user,**validated_data)
-    #     products = Product.objects.filter(id__in=product_ids)
-    #     collection_request.products.set(products)
-    #     return collection_request
 
     
 # class ScrapCollectionRequestSerializer(serializers.ModelSerializer):

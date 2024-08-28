@@ -200,6 +200,7 @@ class ScheduleRequestView(APIView):
                 print(serializer.errors)  
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             scrap_request.is_scheduled = True
+            scrap_request.is_accepted = True
             scrap_request.scheduled_date = scrap_request.date_requested
             scrap_request.save()
             return Response({'message':'Request shedule succesfully'})
@@ -224,6 +225,7 @@ class RescheduleRequestView(APIView):
             print('this is an error',serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         scrap_request.is_scheduled = True
+        scrap_request.is_accepted = True
         serializer.save()
         return Response({'message': 'Request rescheduled successfully'})
     
@@ -250,8 +252,12 @@ class TodayPendingRequestsView(generics.ListAPIView):
     serializer_class = TodaySheduledSerializer
 
     def get_queryset(self):
+        shop = self.request.user.shop
+        if not shop:
+            return CollectionRequest.objects.none()
+        print('this is the shop name',shop)
         today = timezone.now().date()
-        return CollectionRequest.objects.filter(scheduled_date__lte=today, is_accepted=False )
+        return CollectionRequest.objects.filter(shop=shop,scheduled_date__lte=today, is_accepted=True ,is_collected=False)
         
 class PendingRequestsDetailsView(generics.RetrieveAPIView):
     permission_classes=[IsAuthenticated]
@@ -336,9 +342,14 @@ class PaymentCashView(APIView):
     serializer_class = PaymentSuccessfullSerializer
 
     def post(self, request, id):
+        print('the request comming ',self.request)
         try:
             transaction = Transaction.objects.get(id=id)
             transaction.payment_method = 'cash'
+            collection_request = transaction.collection_request
+            print('the collection_request comming to the backend',collection_request)
+            collection_request.is_collected = True
+            collection_request.save()
             transaction.save()
             serializer = self.serializer_class(transaction)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -363,6 +374,12 @@ class CreateRazorpayOrderView(APIView):
             })
             transaction.razorpay_order_id = razorpay_order['id']
             transaction.save()
+            
+            collection_request = transaction.collection_request
+            if collection_request:
+                collection_request.is_collected = False
+                collection_request.save()
+                
             return Response({
                 'order_id': razorpay_order['id'],
                 'amount': razorpay_order['amount'],
@@ -395,6 +412,11 @@ class VerifyPaymentView(APIView):
             transaction.razorpay_order_id = request.data.get('razorpay_order_id')
             transaction.payment_id = request.data.get('razorpay_payment_id')
             transaction.save()
+            
+            collection_request = transaction.collection_request
+            if collection_request:
+                collection_request.is_collected = True
+                collection_request.save()
 
             return Response({'status': 'success'}, status=status.HTTP_200_OK)
         except razorpay.errors.SignatureVerificationError:

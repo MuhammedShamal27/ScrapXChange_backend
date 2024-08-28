@@ -495,7 +495,15 @@ class ConfirmCollectionSerializer(serializers.ModelSerializer):
         model = Transaction
         fields = ['id', 'total_quantity', 'total_price', 'date_picked',  'transaction_products']
         
+class CollectionRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CollectionRequest
+        fields = ['id','is_collected']
+
 class PaymentSuccessfullSerializer(serializers.ModelSerializer):
+    
+    collection_request = CollectionRequestSerializer()
+    
     class Meta:
         model = Transaction
-        fields=['id','payment_method','payment_id','razorpay_order_id']
+        fields=['id','payment_method','payment_id','razorpay_order_id','collection_request']
