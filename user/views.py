@@ -4,14 +4,15 @@ from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status,permissions
 from .serializers import *
 from .generate_otp import *
 from rest_framework.permissions import IsAuthenticated,AllowAny
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound,PermissionDenied
 import logging
 from rest_framework import generics
-
+from shop.serializer import *
+from django.db.models import Q
 # Create your views here.
 
 logger = logging.getLogger(__name__)
@@ -214,15 +215,63 @@ class CollectionRequestCreateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
   
         
-# class ScrapCollectionRequestView(APIView):
-#     permission_classes=[IsAuthenticated]
 
-#     def post(self, request):
-#         print('Incoming request data',request.data)
-#         serializer = ScrapCollectionRequestSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save(user=request.user)
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         else:
-#             print('the serilaizer error',serializer.errors)
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class ShopListView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ShopListSerializer
+
+    def get_queryset(self):
+        queryset = CustomUser.objects.filter(is_superuser=False, is_shop=True, shop__is_verified=True)
+        search_query = self.request.query_params.get('search', None)
+        if search_query:
+            queryset = queryset.filter(Q(username__icontains=search_query) | Q(shop__shop_name__icontains=search_query))
+        return queryset
+    
+    
+
+class CreateOrFetchChatRoomView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, shop_id):
+        print('the requst comming',request.data)
+        user = request.user
+        try:
+            shop = Shop.objects.get(id=shop_id)
+        except Shop.DoesNotExist:
+            return Response({"error": "Shop not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        chat_room, created = ChatRoom.objects.get_or_create(user=user, shop=shop)
+        serializer = ChatRoomSerializer(chat_room)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+    
+    
+class MessageView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, room_id):
+        print('the coming request is in get ',request.data)
+        room = get_object_or_404(ChatRoom, id=room_id)
+        messages = room.messages.all()
+        serializer = MessageSerializer(messages, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, room_id):
+        print('the coming request is in post ',request.data)
+        try:
+            room = get_object_or_404(ChatRoom, id=room_id)
+            sender = request.user  # Assuming the user is authenticated
+            receiver_id = request.data.get('receiver_id')
+            message_text = request.data.get('message')
+
+            message = Message.objects.create(
+                room=room,
+                sender=sender,
+                receiver_id=receiver_id,
+                message=message_text
+            )
+
+            return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

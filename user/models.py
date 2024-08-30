@@ -120,5 +120,21 @@ class Transaction(models.Model):
         return f"Transaction for {self.collection_request.user.email} at {self.collection_request.shop.shop_name}"
 
 
-    
-    
+class ChatRoom(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='chat_rooms')
+    shop = models.ForeignKey(Shop, on_delete=models.CASCADE, related_name='chat_rooms')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Room {self.id} - {self.user.username} and {self.shop.shop_name}"  # Using the primary key as room_id
+
+
+class Message(models.Model):
+    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='sent_messages')
+    receiver = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='received_messages')
+    timestamp = models.DateTimeField(auto_now_add=True)
+    message = models.TextField()
+
+    def __str__(self):
+        return f"Message from {self.sender.username} to {self.receiver.username}"

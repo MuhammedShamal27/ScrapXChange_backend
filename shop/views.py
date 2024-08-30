@@ -428,3 +428,25 @@ class VerifyPaymentView(APIView):
         except Exception as e:
             print('An error occurred:', str(e))
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+# class ChatRoomCreateView(generics.CreateAPIView):
+#     serializer_class = ChatRoomSerializer
+
+#     def post(self, request, *args, **kwargs):
+#         serializer = self.get_serializer(data=request.data)
+#         if serializer.is_valid():
+#             room = serializer.save()
+#             return Response(ChatRoomSerializer(room).data, status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+# class MessageCreateView(generics.CreateAPIView):
+#     serializer_class = MessageSerializer
+
+# class MessageListView(generics.ListAPIView):
+#     serializer_class = MessageSerializer
+
+#     def get_queryset(self):
+#         room_id = self.kwargs['room_id']
+#         return Message.objects.filter(room__id=room_id).order_by('timestamp')

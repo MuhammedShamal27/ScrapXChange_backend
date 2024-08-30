@@ -507,3 +507,41 @@ class PaymentSuccessfullSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
         fields=['id','payment_method','payment_id','razorpay_order_id','collection_request']
+        
+        
+        
+
+class ChatRoomSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatRoom
+        fields = ['id', 'user', 'shop', 'created_at']
+
+    def create(self, validated_data):
+        # Check if a chat room already exists between the user and the shop
+        print('the validated data',validated_data)
+        room, created = ChatRoom.objects.get_or_create(
+            user=validated_data['user'],
+            shop=validated_data['shop'],
+        )
+        return room
+    
+    
+class MessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ['id', 'room', 'sender', 'receiver', 'timestamp', 'message']
+
+    def create(self, validated_data):
+        # Ensure that the sender and receiver are part of the room
+        print('the validated data',validated_data)
+        room = validated_data['room']
+        sender = validated_data['sender']
+        receiver = validated_data['receiver']
+        
+        if sender != room.user and sender != room.shop.user:
+            raise serializers.ValidationError("Sender is not part of this chat room.")
+        
+        if receiver != room.user and receiver != room.shop.user:
+            raise serializers.ValidationError("Receiver is not part of this chat room.")
+        
+        return super().create(validated_data)

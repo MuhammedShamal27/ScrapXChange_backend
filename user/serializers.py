@@ -400,72 +400,47 @@ class CollectionRequestSerializer(serializers.ModelSerializer):
         return scrap_request
 
 
+class ShopSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Shop
+        fields ='__all__'
 
+class ShopListSerializer(serializers.ModelSerializer):
+    shop= ShopSerializer()
     
-# class ScrapCollectionRequestSerializer(serializers.ModelSerializer):
-#     date_requested = serializers.DateField() 
-#     name = serializers.CharField()
-#     address = serializers.CharField()
-#     landmark = serializers.CharField()
-#     pincode = serializers.CharField()
-#     phone = serializers.CharField()
-#     upi = serializers.CharField()
-#     products = serializers.ListField(child=serializers.IntegerField(), write_only=True)
-
-#     class Meta:
-#         model = CollectionRequest
-#         fields = ['date_requested', 'name', 'address', 'landmark', 'pincode', 'phone', 'upi','products']
-
-#     def validate(self, data):
-#         print('validating data',data)
-#         for field in ['date_requested', 'name', 'address', 'landmark', 'pincode', 'phone', 'upi','products','shop']:
-#             if not data.get(field):
-#                 raise serializers.ValidationError({field: "This field is required."})
-#         return data
-
-#     def validate_date_requested(self, value):
-#         today = date.today()
-#         if value < today or value > today + timedelta(days=7):
-#             raise serializers.ValidationError("The date should be within the current day or within a week (no dates before today or after 7 days).")
-#         return value
-
-#     def validate_name(self, value):
-#         if not value.isalpha():
-#             raise serializers.ValidationError("The name can only contain alphabets and no spaces.")
-#         return value
-
-#     def validate_address(self, value):
-#         if value and (value[0].isspace() or any(c in "!@#$%^&()_+=<>?/;:'\"[]{}|\\`~" for c in value) and not ('.' in value or ',' in value)):
-#             raise serializers.ValidationError("Address cannot start with a space or contain special characters except dot (.) and comma (,).")
-#         return value
-
-#     def validate_landmark(self, value):
-#         if not value.isalpha():
-#             raise serializers.ValidationError("The landmark can only contain alphabets and no spaces.")
-#         return value
-
-#     def validate_pincode(self, value):
-#         if not value.isdigit() or len(value) != 6:
-#             raise serializers.ValidationError("The pincode must be a 6-digit number.")
-#         return value
-
-#     def validate_phone(self, value):
-#         if not value.isdigit() or len(value) != 10:
-#             raise serializers.ValidationError("The phone number should be a 10-digit number.")
-#         return value
-
-#     def validate_upi(self, value):
-#         if " " in value or '@' not in value:
-#             raise serializers.ValidationError("The UPI ID should not contain spaces and must include '@'.")
-#         return value
+    class Meta:
+        model = CustomUser
+        fields =['id','email','username','is_active','shop']
+        
+        
+class ChatRoomSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatRoom
+        fields = ['id', 'user', 'shop', 'created_at']
+        
+    def create(self, validated_data):
+        # Check if a chat room already exists between the user and the shop
+        room, created = ChatRoom.objects.get_or_create(
+            user=validated_data['user'],
+            shop=validated_data['shop'],
+        )
+        return room
     
-#     def create(self, validated_data):
-#         products = validated_data.pop('products',[])
-#         collection_request = CollectionRequest.objects.create(**validated_data)
-#         for product_id in products:
-#             product = Product.objects.get(id=product_id)
-#             collection_request.products.add(product)
-#         return collection_request
+class MessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ['id', 'room', 'sender', 'receiver', 'timestamp', 'message']
         
+    def create(self, validated_data):
+        # Ensure that the sender and receiver are part of the room
+        room = validated_data['room']
+        sender = validated_data['sender']
+        receiver = validated_data['receiver']
         
+        if sender != room.user and sender != room.shop.user:
+            raise serializers.ValidationError("Sender is not part of this chat room.")
         
+        if receiver != room.user and receiver != room.shop.user:
+            raise serializers.ValidationError("Receiver is not part of this chat room.")
+        
+        return super().create(validated_data)
