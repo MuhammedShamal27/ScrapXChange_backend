@@ -5,15 +5,17 @@ from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework import status,permissions
-from .serializers import *
-from .generate_otp import *
 from rest_framework.permissions import IsAuthenticated,AllowAny
 from rest_framework.exceptions import NotFound,PermissionDenied
-import logging
 from rest_framework import generics
-from shop.serializer import *
 from django.db.models import Q
+from .serializers import *
+from .generate_otp import *
+import logging
 # Create your views here.
+
+# -------- User Register -----------
+# ----------------------------------
 
 logger = logging.getLogger(__name__)
 class UserRegisterView(APIView):
@@ -31,6 +33,10 @@ class UserRegisterView(APIView):
         logger.warning(f'Invalid data :{user_serializer.errors}')
         return Response(user_serializer.errors,status=status.HTTP_400_BAD_REQUEST)
     
+    
+# -------- OTP Verification --------
+# ----------------------------------
+
 
 class OTPVerificationView(APIView):
     permission_classes = [AllowAny]
@@ -47,6 +53,11 @@ class OTPVerificationView(APIView):
             },status=status.HTTP_200_OK)
         logger.warning(f'Invalid data :{serializer.errors}')
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+
+
+# -------- Resend OTP --------------
+# ----------------------------------
 
 
 class ResendOTPView(APIView):
@@ -67,6 +78,8 @@ class ResendOTPView(APIView):
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 
+# -------- Password Reset ----------
+# ----------------------------------
 
 class PasswordResetRequestView(APIView):
     permission_classes=[AllowAny]
@@ -83,6 +96,10 @@ class PasswordResetRequestView(APIView):
             return Response({'message':'OTP sent for password reset.'},status=status.HTTP_200_OK)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
+
+# -------- Email Verification ------
+# ----------------------------------
+
 class EmailOTPVerificationView(APIView):
     permission_classes = [AllowAny]
     
@@ -98,6 +115,12 @@ class EmailOTPVerificationView(APIView):
             return Response({"message":"OTP verified successfully."}, status=status.HTTP_200_OK)
         
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+    
+    
+# -------- Password Reset ----------
+# ----------------------------------
+
+
 class PasswordResetView(APIView):
     permission_classes=[AllowAny]
     def post(self,request):
@@ -106,6 +129,11 @@ class PasswordResetView(APIView):
             serializer.save()
             return Response({'message':'Password reset successful.'},status=status.HTTP_200_OK)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+
+# -------- User Login --------------
+# ----------------------------------
+
 
 logger = logging.getLogger(__name__)
 class UserLoginView(APIView):
@@ -120,6 +148,10 @@ class UserLoginView(APIView):
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 
+# -------- Home Page ---------------
+# ----------------------------------
+
+
 class HomePageView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -129,7 +161,9 @@ class HomePageView(APIView):
         serializer = HomePageSerializer(user)
         logger.debug(f'Recieved data :{serializer.data}')
         return Response(serializer.data)
-    
+
+# -------- User Profile ------------
+# ----------------------------------
 
 class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]
@@ -142,11 +176,11 @@ class UserProfileView(APIView):
         serializer =UserProfileSerializer(user_profile)
         return Response(serializer.data)
 
-    
+# -------- Edit Profile ------------
+# ----------------------------------
 
 class EditUserProfileView(APIView):
     permission_classes = [IsAuthenticated]
-    
 
     def get(self,request):
         try:
@@ -176,8 +210,10 @@ class EditUserProfileView(APIView):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    
-    
+
+# -------- Shop List ---------------
+# ----------------------------------    
+
 class ShopListView(ListAPIView):
     serializer_class = ShopSerializer
 
@@ -189,6 +225,10 @@ class ShopListView(ListAPIView):
             is_verified=True, 
             is_rejected=False
         )
+
+
+# -------- Shop Product List -------
+# ---------------------------------- 
 
 
 class ShopProductListView(ListAPIView):
@@ -204,6 +244,8 @@ class ShopProductListView(ListAPIView):
         return Category.objects.filter(user=user).distinct()
 
 
+# ----- Scrap Collection Request ---
+# ----------------------------------
   
 class CollectionRequestCreateView(APIView):
     def post(self, request, *args, **kwargs):
@@ -215,8 +257,12 @@ class CollectionRequestCreateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
   
         
+        
+# -------- Shop List For Message ---
+# ---------------------------------- 
 
-class ShopListView(generics.ListAPIView):
+
+class MessageShopListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ShopListSerializer
 
@@ -224,12 +270,15 @@ class ShopListView(generics.ListAPIView):
         queryset = CustomUser.objects.filter(is_superuser=False, is_shop=True, shop__is_verified=True)
         search_query = self.request.query_params.get('search', None)
         if search_query:
-            queryset = queryset.filter(Q(username__icontains=search_query) | Q(shop__shop_name__icontains=search_query))
+            queryset = queryset.filter( Q(shop__shop_name__icontains=search_query))
         return queryset
-    
-    
 
-class CreateOrFetchChatRoomView(generics.GenericAPIView):
+
+# -------- ChatRoom Creation -----------
+# --------------------------------------
+
+
+class UserCreateOrFetchChatRoomView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, shop_id):
@@ -246,7 +295,22 @@ class CreateOrFetchChatRoomView(generics.GenericAPIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
     
     
-class MessageView(generics.GenericAPIView):
+
+class UserChatRoomsView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ChatRoomSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        return ChatRoom.objects.filter(user=user)
+
+
+ 
+# -------- User Message -----------
+# ---------------------------------
+
+    
+class UserMessageView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, room_id):

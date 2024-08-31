@@ -2,11 +2,13 @@ from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from user.models import *
+from datetime import *
 from . models import *
 import re
-from datetime import *
 
 
+# -------- Shop Registration -------
+# ----------------------------------
 class ShopRegisterSerializer(serializers.ModelSerializer):
     username=serializers.CharField(required=True)
     email=serializers.EmailField(required=True)
@@ -95,7 +97,9 @@ class ShopRegisterSerializer(serializers.ModelSerializer):
         }
         Shop.objects.create(**shop_data)
         return user
-    
+
+
+ 
 class ShopSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -508,40 +512,31 @@ class PaymentSuccessfullSerializer(serializers.ModelSerializer):
         model = Transaction
         fields=['id','payment_method','payment_id','razorpay_order_id','collection_request']
         
-        
-        
-
-class ChatRoomSerializer(serializers.ModelSerializer):
+    
+class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ChatRoom
-        fields = ['id', 'user', 'shop', 'created_at']
+        model = CustomUser
+        fields = ['id', 'username'] 
+        
 
-    def create(self, validated_data):
-        # Check if a chat room already exists between the user and the shop
-        print('the validated data',validated_data)
-        room, created = ChatRoom.objects.get_or_create(
-            user=validated_data['user'],
-            shop=validated_data['shop'],
-        )
-        return room
     
     
-class MessageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Message
-        fields = ['id', 'room', 'sender', 'receiver', 'timestamp', 'message']
+# class MessageSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Message
+#         fields = ['id', 'room', 'sender', 'receiver', 'timestamp', 'message']
 
-    def create(self, validated_data):
-        # Ensure that the sender and receiver are part of the room
-        print('the validated data',validated_data)
-        room = validated_data['room']
-        sender = validated_data['sender']
-        receiver = validated_data['receiver']
+#     def create(self, validated_data):
+#         # Ensure that the sender and receiver are part of the room
+#         print('the validated data',validated_data)
+#         room = validated_data['room']
+#         sender = validated_data['sender']
+#         receiver = validated_data['receiver']
         
-        if sender != room.user and sender != room.shop.user:
-            raise serializers.ValidationError("Sender is not part of this chat room.")
+#         if sender != room.user and sender != room.shop.user:
+#             raise serializers.ValidationError("Sender is not part of this chat room.")
         
-        if receiver != room.user and receiver != room.shop.user:
-            raise serializers.ValidationError("Receiver is not part of this chat room.")
+#         if receiver != room.user and receiver != room.shop.user:
+#             raise serializers.ValidationError("Receiver is not part of this chat room.")
         
-        return super().create(validated_data)
+#         return super().create(validated_data)

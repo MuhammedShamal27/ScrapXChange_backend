@@ -26,11 +26,7 @@ urlpatterns = [
     path('payment-cash/<int:id>/',PaymentCashView.as_view(),name='payment-cash'),
     path('create-razorpay-order/<int:id>/', CreateRazorpayOrderView.as_view(), name='create-razorpay-order'),
     path('verify-payment/',VerifyPaymentView.as_view(),name='verify-payment'),
-        
-    
-    # path('chatrooms/', ChatRoomCreateView.as_view(), name='create-chat-room'),
-    # path('chatrooms/<int:room_id>/messages/', MessageListView.as_view(), name='list-messages'),
-    # path('messages/', MessageCreateView.as_view(), name='create-message'),
-    
-    
+    path('fetch-users/', UserListingView.as_view(), name='fetch-users'),
+    path('chatroom/<int:user_id>/',ShopCreateOrFetchChatRoomView.as_view(),name='chatrooms'),
+    path('chatroom/<int:room_id>/messages/',ShopMessageView.as_view(),name='chatroom-messages'),
 ]

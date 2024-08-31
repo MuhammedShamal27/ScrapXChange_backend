@@ -335,7 +335,10 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'products']
 
     def get_products(self, category):
+        print('comming')
         products = Product.objects.filter(category=category)
+        print('the products',products)
+        print(f"Category: {category.name}, Products: {products}")
         return ProductSerializer(products, many=True).data
     
 
@@ -414,12 +417,14 @@ class ShopListSerializer(serializers.ModelSerializer):
         
         
 class ChatRoomSerializer(serializers.ModelSerializer):
+    shop = ShopSerializer()
+    
     class Meta:
         model = ChatRoom
         fields = ['id', 'user', 'shop', 'created_at']
         
     def create(self, validated_data):
-        # Check if a chat room already exists between the user and the shop
+        
         room, created = ChatRoom.objects.get_or_create(
             user=validated_data['user'],
             shop=validated_data['shop'],
@@ -427,12 +432,15 @@ class ChatRoomSerializer(serializers.ModelSerializer):
         return room
     
 class MessageSerializer(serializers.ModelSerializer):
+    sender_username = serializers.CharField(source='sender.username', read_only=True)
+    receiver_username = serializers.CharField(source='receiver.username', read_only=True)
+    
     class Meta:
         model = Message
-        fields = ['id', 'room', 'sender', 'receiver', 'timestamp', 'message']
+        fields = ['id', 'room', 'sender', 'receiver', 'timestamp', 'message','sender_username', 'receiver_username']
         
     def create(self, validated_data):
-        # Ensure that the sender and receiver are part of the room
+        
         room = validated_data['room']
         sender = validated_data['sender']
         receiver = validated_data['receiver']

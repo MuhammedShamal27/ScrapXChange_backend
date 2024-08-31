@@ -1,14 +1,15 @@
-from django.shortcuts import render
+from django.shortcuts import render,get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from . serializer import *
 from rest_framework import status,generics,permissions
 from rest_framework.permissions import AllowAny,IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from datetime import *
 from django.utils import timezone
+from . serializer import *
+from datetime import *
+from user.serializers import ChatRoomSerializer,MessageSerializer
 import razorpay
 
 
@@ -430,23 +431,73 @@ class VerifyPaymentView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class UserListingView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = CustomUserSerializer
 
-# class ChatRoomCreateView(generics.CreateAPIView):
-#     serializer_class = ChatRoomSerializer
+    def get_queryset(self):
+        shop = self.request.user.shop
+        if not shop:
+            return CustomUser.objects.none()  # Return an empty queryset if no shop is found
 
-#     def post(self, request, *args, **kwargs):
-#         serializer = self.get_serializer(data=request.data)
-#         if serializer.is_valid():
-#             room = serializer.save()
-#             return Response(ChatRoomSerializer(room).data, status=status.HTTP_200_OK)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        collection_requests = CollectionRequest.objects.filter(shop=shop)
+        user_ids = collection_requests.values_list('user_id', flat=True).distinct()
+        users = CustomUser.objects.filter(id__in=user_ids)
+        
+        search_query = self.request.query_params.get('search', None)
+        if search_query:
+            users = users.filter(Q(username__icontains=search_query))
+        
+        return users
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        if not queryset.exists():
+            return Response({'detail': 'No users found for this shop'}, status=404)
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
     
-# class MessageCreateView(generics.CreateAPIView):
-#     serializer_class = MessageSerializer
+    
+class ShopCreateOrFetchChatRoomView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
 
-# class MessageListView(generics.ListAPIView):
-#     serializer_class = MessageSerializer
+    def post(self, request, user_id):
+        try:
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-#     def get_queryset(self):
-#         room_id = self.kwargs['room_id']
-#         return Message.objects.filter(room__id=room_id).order_by('timestamp')
+        chat_room, created = ChatRoom.objects.get_or_create(shop=request.user.shop, user=user)
+        serializer = ChatRoomSerializer(chat_room)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+    
+    
+class ShopMessageView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, room_id):
+        room = get_object_or_404(ChatRoom, id=room_id)
+        messages = room.messages.all()
+        serializer = MessageSerializer(messages, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, room_id):
+        try:
+            room = get_object_or_404(ChatRoom, id=room_id)
+            sender = request.user
+            receiver_id = request.data.get('receiver_id')
+            message_text = request.data.get('message')
+
+            message = Message.objects.create(
+                room=room,
+                sender=sender,
+                receiver_id=receiver_id,
+                message=message_text
+            )
+
+            return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
