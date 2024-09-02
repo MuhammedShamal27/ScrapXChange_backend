@@ -271,6 +271,7 @@ class MessageShopListView(generics.ListAPIView):
         search_query = self.request.query_params.get('search', None)
         if search_query:
             queryset = queryset.filter( Q(shop__shop_name__icontains=search_query))
+            print('the query set' , queryset)
         return queryset
 
 
@@ -283,10 +284,13 @@ class UserCreateOrFetchChatRoomView(generics.GenericAPIView):
 
     def post(self, request, shop_id):
         print('the requst comming',request.data)
+        print('Received request for shop_id:', shop_id)
         user = request.user
         try:
             shop = Shop.objects.get(id=shop_id)
+            print('Shop found:', shop)
         except Shop.DoesNotExist:
+            print('Shop not found for id:', shop_id)
             return Response({"error": "Shop not found"}, status=status.HTTP_404_NOT_FOUND)
 
         chat_room, created = ChatRoom.objects.get_or_create(user=user, shop=shop)

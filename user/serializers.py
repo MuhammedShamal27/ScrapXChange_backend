@@ -415,13 +415,23 @@ class ShopListSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields =['id','email','username','is_active','shop']
         
+class FetchLastMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ['id', 'sender', 'receiver', 'timestamp', 'message']
+
         
 class ChatRoomSerializer(serializers.ModelSerializer):
     shop = ShopSerializer()
+    messages = serializers.SerializerMethodField()
     
     class Meta:
         model = ChatRoom
-        fields = ['id', 'user', 'shop', 'created_at']
+        fields = ['id', 'user', 'shop', 'created_at','messages']
+        
+    def get_messages(self, obj):
+        messages = Message.objects.filter(room=obj)
+        return FetchLastMessageSerializer(messages, many=True).data
         
     def create(self, validated_data):
         
