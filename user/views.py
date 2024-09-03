@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status,permissions
 from rest_framework.permissions import IsAuthenticated,AllowAny
 from rest_framework.exceptions import NotFound,PermissionDenied
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import generics
 from django.db.models import Q
 from .serializers import *
@@ -329,17 +330,41 @@ class UserMessageView(generics.GenericAPIView):
         try:
             room = get_object_or_404(ChatRoom, id=room_id)
             sender = request.user  # Assuming the user is authenticated
+            print('the sender id ',sender)
             receiver_id = request.data.get('receiver_id')
+            print('the reciever id ',receiver_id)
             message_text = request.data.get('message')
+            
+            # Check for files in the request
+            file = request.FILES.get('file', None)
+            print('the files',file)
+            image, video = None, None
+            audio = request.FILES.get('audio', None)
+
+            if file:
+                if file.content_type.startswith('image/'):
+                    print('this is image')
+                    image = file
+                elif file.content_type.startswith('video/'):
+                    print('this is video')
+                    video = file
 
             message = Message.objects.create(
                 room=room,
                 sender=sender,
                 receiver_id=receiver_id,
-                message=message_text
+                message=message_text,
+                image=image,
+                video=video,
+                audio=audio
             )
+            
+            print ('the message details ',message)
 
             return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+        

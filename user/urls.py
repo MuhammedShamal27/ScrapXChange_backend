@@ -17,7 +17,7 @@ urlpatterns = [
     path('shops/<int:shop_id>/products/', ShopProductListView.as_view(), name='shop-products'),
     path('scrap-collection-request/',CollectionRequestCreateView.as_view(),name='scrap-colection-request'),
     path('all-shop/',MessageShopListView.as_view(),name='shop-list'),
-    path('chatrooms/', UserChatRoomsView.as_view(), name='user-chatrooms'), 
+    path('chatrooms/', UserChatRoomsView.as_view(), name='shops-chatrooms'), 
     path('chatroom/<int:shop_id>/',UserCreateOrFetchChatRoomView.as_view(),name='chatrooms'),
     path('chatroom/<int:room_id>/messages/',UserMessageView.as_view(),name='chatroom-messages'),
     

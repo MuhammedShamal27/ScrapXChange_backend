@@ -512,31 +512,82 @@ class PaymentSuccessfullSerializer(serializers.ModelSerializer):
         model = Transaction
         fields=['id','payment_method','payment_id','razorpay_order_id','collection_request']
         
-    
-class CustomUserSerializer(serializers.ModelSerializer):
+class ShopSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Shop
+        fields ='__all__'
+        
+class UserListSerializer(serializers.ModelSerializer):
+    shop= ShopSerializer()
     class Meta:
         model = CustomUser
-        fields = ['id', 'username'] 
+        fields =['id','email','username','is_active','shop']
         
-
+        
+class ShopFetchLastMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ['id', 'sender', 'receiver', 'timestamp', 'message']
+        
+        
+class ShopChatRoomSerializer(serializers.ModelSerializer):
+    shop = ShopSerializer()
+    messages = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ChatRoom
+        fields = ['id', 'user', 'shop', 'created_at','messages']
+        
+    def get_messages(self, obj):
+        messages = Message.objects.filter(room=obj)
+        return ShopFetchLastMessageSerializer(messages, many=True).data
+        
+    def create(self, validated_data):
+        
+        room, created = ChatRoom.objects.get_or_create(
+            user=validated_data['user'],
+            shop=validated_data['shop'],
+        )
+        return room
     
     
-# class MessageSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Message
-#         fields = ['id', 'room', 'sender', 'receiver', 'timestamp', 'message']
+class ShopMessageSerializer(serializers.ModelSerializer):
+    sender_username = serializers.CharField(source='sender.username', read_only=True)
+    receiver_username = serializers.CharField(source='receiver.username', read_only=True)
+    audio = serializers.ImageField(required=False)
+    image = serializers.ImageField(required=False)
+    video = serializers.ImageField(required=False)
+     
+    class Meta:
+        model = Message
+        fields = ['id', 'room', 'sender', 'receiver', 'timestamp', 'message','audio','image','video','sender_username', 'receiver_username']
+        
+    def validate_image(self, value):
+        if value and not value.name.endswith(('jpg', 'jpeg', 'png', 'gif')):
+            raise serializers.ValidationError('Unsupported image file type.')
+        return value
 
-#     def create(self, validated_data):
-#         # Ensure that the sender and receiver are part of the room
-#         print('the validated data',validated_data)
-#         room = validated_data['room']
-#         sender = validated_data['sender']
-#         receiver = validated_data['receiver']
+    def validate_video(self, value):
+        if value and not value.name.endswith(('mp4', 'avi', 'mov')):
+            raise serializers.ValidationError('Unsupported video file type.')
+        return value
+
+    def validate_audio(self, value):
+        if value and not value.name.endswith(('webm', 'mp3', 'wav', 'ogg')):
+            raise serializers.ValidationError('Unsupported audio file type.')
+        return value
+    
+    def create(self, validated_data):
         
-#         if sender != room.user and sender != room.shop.user:
-#             raise serializers.ValidationError("Sender is not part of this chat room.")
+        print('the validated data',validated_data)
+        room = validated_data['room']
+        sender = validated_data['sender']
+        receiver = validated_data['receiver']
         
-#         if receiver != room.user and receiver != room.shop.user:
-#             raise serializers.ValidationError("Receiver is not part of this chat room.")
+        if sender != room.user and sender != room.shop.user:
+            raise serializers.ValidationError("Sender is not part of this chat room.")
         
-#         return super().create(validated_data)
+        if receiver != room.user and receiver != room.shop.user:
+            raise serializers.ValidationError("Receiver is not part of this chat room.")
+        
+        return super().create(validated_data)

@@ -444,13 +444,32 @@ class ChatRoomSerializer(serializers.ModelSerializer):
 class MessageSerializer(serializers.ModelSerializer):
     sender_username = serializers.CharField(source='sender.username', read_only=True)
     receiver_username = serializers.CharField(source='receiver.username', read_only=True)
+    audio = serializers.ImageField(required=False)
+    image = serializers.ImageField(required=False)
+    video = serializers.ImageField(required=False)
     
     class Meta:
         model = Message
-        fields = ['id', 'room', 'sender', 'receiver', 'timestamp', 'message','sender_username', 'receiver_username']
+        fields = ['id', 'room', 'sender', 'receiver', 'timestamp', 'message','audio','image','video','sender_username', 'receiver_username']
         
+    def validate_image(self, value):
+        if value and not value.name.endswith(('jpg', 'jpeg', 'png', 'gif')):
+            raise serializers.ValidationError('Unsupported image file type.')
+        return value
+
+    def validate_video(self, value):
+        if value and not value.name.endswith(('mp4', 'avi', 'mov')):
+            raise serializers.ValidationError('Unsupported video file type.')
+        return value
+
+    def validate_audio(self, value):
+        if value and not value.name.endswith(('webm', 'mp3', 'wav', 'ogg')):
+            raise serializers.ValidationError('Unsupported audio file type.')
+        return value
+    
     def create(self, validated_data):
         
+        print('the validated data',validated_data)
         room = validated_data['room']
         sender = validated_data['sender']
         receiver = validated_data['receiver']
