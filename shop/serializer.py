@@ -512,16 +512,24 @@ class PaymentSuccessfullSerializer(serializers.ModelSerializer):
         model = Transaction
         fields=['id','payment_method','payment_id','razorpay_order_id','collection_request']
         
-class ShopSerializer(serializers.ModelSerializer):
+
+
+# ---------------------------------------------------------------------------------------------
+
+class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Shop
-        fields ='__all__'
+        model = UserProfile
+        fields = "__all__"
         
-class UserListSerializer(serializers.ModelSerializer):
-    shop= ShopSerializer()
+class CustomUserSerializer(serializers.ModelSerializer):
+    User_profile=UserProfileSerializer()
+    
     class Meta:
         model = CustomUser
-        fields =['id','email','username','is_active','shop']
+        fields = ['id', 'email', 'username','User_profile']
+        
+
+
         
         
 class ShopFetchLastMessageSerializer(serializers.ModelSerializer):
@@ -531,8 +539,8 @@ class ShopFetchLastMessageSerializer(serializers.ModelSerializer):
         
         
 class ShopChatRoomSerializer(serializers.ModelSerializer):
-    shop = ShopSerializer()
     messages = serializers.SerializerMethodField()
+    user = CustomUserSerializer()
     
     class Meta:
         model = ChatRoom
@@ -543,7 +551,7 @@ class ShopChatRoomSerializer(serializers.ModelSerializer):
         return ShopFetchLastMessageSerializer(messages, many=True).data
         
     def create(self, validated_data):
-        
+        print('the validated data',validated_data)
         room, created = ChatRoom.objects.get_or_create(
             user=validated_data['user'],
             shop=validated_data['shop'],

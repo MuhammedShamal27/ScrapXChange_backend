@@ -431,37 +431,48 @@ class VerifyPaymentView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class MessageUserListView(generics.ListAPIView):
+# -----------------------------------------------------------------------------------------------------------
+
+class ShopCollectionRequestUsersView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = UserListSerializer
+    serializer_class = CustomUserSerializer
 
     def get_queryset(self):
-        queryset = CustomUser.objects.filter(is_superuser=False, is_shop=False)
+        shop = self.request.user.shop
+        queryset = CustomUser.objects.filter(collection_requests__shop=shop).distinct()
         search_query = self.request.query_params.get('search', None)
         if search_query:
             queryset = queryset.filter( Q(username__icontains=search_query))
-            print('the query set' , queryset)
+
         return queryset
-    
+
+
     
     
 class ShopCreateOrFetchChatRoomView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
-
+    serializer_class = ShopChatRoomSerializer
+    
     def post(self, request, user_id):
-        print('the requst comming',request.data)
-        print('Received request for shop_id:', user_id)
-        user = request.user
+        print('the requst comming',request)
+        print('Received request for user_id:', user_id)
         try:
             user = CustomUser.objects.get(id=user_id)
             print('user found:', user)
         except CustomUser.DoesNotExist:
             print('user not found for id:', user_id)
             return Response({"error": "user not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        chat_room, created = ChatRoom.objects.get_or_create(user=user)
+        
+        shop_name = request.user.shop
+        print('the shop id or shop',shop_name)
+        username = shop_name.user
+        print('the custom user name',username)
+        shop = username.id
+        print('the custom user',shop)
+        chat_room, created = ChatRoom.objects.get_or_create(user=user,shop=shop)
+        
         serializer = ShopChatRoomSerializer(chat_room)
-
+        print('the serilizer data',serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
     
     
@@ -473,7 +484,9 @@ class ShopChatRoomsView(generics.ListAPIView):
 
         user = self.request.user
         print('the user is ',user)
-        return ChatRoom.objects.filter(user=user)
+        chat_room = ChatRoom.objects.filter(shop__user=user)
+        print('the chat rooms',chat_room)
+        return chat_room
 
 
 class ShopMessageView(generics.GenericAPIView):
