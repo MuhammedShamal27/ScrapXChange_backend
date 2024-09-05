@@ -50,6 +50,7 @@ SIMPLE_JWT = {
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -61,6 +62,8 @@ INSTALLED_APPS = [
     'scrapxchange_admin',
     'rest_framework',
     'corsheaders',
+    'channels',
+    
 ]
 
 MIDDLEWARE = [
@@ -183,3 +186,19 @@ AUTHENTICATIONS_BACKENDS = [
 
 RAZORPAY_API_KEY = 'rzp_test_Vu3ybk6YCPR1WK'
 RAZORPAY_API_SECRET = 'kbEshpFjqHxwUnG2vsZ5VZ5T'
+
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
+
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#         'CONFIG': {
+#             "hosts": [('127.0.0.1', 6379)],  # Ensure Redis is running and accessible
+#         },
+#     },
+# }
