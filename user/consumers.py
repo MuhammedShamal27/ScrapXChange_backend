@@ -3,7 +3,7 @@ import json
 from asgiref.sync import sync_to_async
 from .models import ChatRoom, CustomUser, Message
 from django.utils import timezone
-
+from datetime import timedelta
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -107,3 +107,24 @@ class ChatConsumer(AsyncWebsocketConsumer):
             message=message,
         )
 
+
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+        if 'sdp' in data:
+            # Forward the SDP offer/answer to the other peer
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'webrtc_message',
+                    'sdp': data['sdp']
+                }
+            )
+        elif 'ice' in data:
+            # Forward ICE candidates to the other peer
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'webrtc_message',
+                    'ice': data['ice']
+                }
+            )

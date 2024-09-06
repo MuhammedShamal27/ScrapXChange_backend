@@ -423,15 +423,15 @@ class FetchLastMessageSerializer(serializers.ModelSerializer):
         
 class ChatRoomSerializer(serializers.ModelSerializer):
     shop = ShopSerializer()
-    messages = serializers.SerializerMethodField()
+    # messages = serializers.SerializerMethodField()
     
     class Meta:
         model = ChatRoom
-        fields = ['id', 'user', 'shop', 'created_at','messages']
+        fields = ['id', 'user', 'shop', 'created_at']
         
-    def get_messages(self, obj):
-        messages = Message.objects.filter(room=obj)
-        return FetchLastMessageSerializer(messages, many=True).data
+    # def get_messages(self, obj):
+    #     messages = Message.objects.filter(room=obj)
+    #     return FetchLastMessageSerializer(messages, many=True).data
         
     def create(self, validated_data):
         
