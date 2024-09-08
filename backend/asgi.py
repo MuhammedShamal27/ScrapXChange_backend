@@ -28,15 +28,19 @@ async def disconnect(sid):
 
 @sio.event
 async def join_room(sid, data):
+    print('the data comming in join room',data)
     room_id = data['room_id']
     await sio.enter_room(sid, room_id)
     print(f"{sid} joined room {room_id}")
 
 @sio.event
 async def send_message(sid, data):
-    print('Message received',data)
+    print('form the sendMessage ',data)
     room_id = data['room_id']
-    message = data['message']
+    message = data.get('message', '')  # Get message or default to empty string   
+    image = data.get('image') 
+    video = data.get('video') 
+    audio = data.get('audio') 
     sender_id = data['sender_id']
     receiver_id = data['receiver_id']
     print(f"Message from {sender_id} to {receiver_id}: {message}")
@@ -44,7 +48,10 @@ async def send_message(sid, data):
     await sio.emit('receive_message', {
         'message': message,
         'sender_id': sender_id,
-        'receiver_id': receiver_id
+        'receiver_id': receiver_id,
+        'image': image,
+        'video' : video,
+        'audio' : audio,
     }, room=room_id)
 
 # Django and ASGI setup

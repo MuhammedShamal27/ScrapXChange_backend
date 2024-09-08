@@ -12,6 +12,7 @@ from datetime import *
 from user.serializers import ChatRoomSerializer,MessageSerializer
 import razorpay
 from django.db.models import Q
+import socketio
 
 # Create your views here.
 
@@ -488,7 +489,8 @@ class ShopChatRoomsView(generics.ListAPIView):
         print('the chat rooms',chat_room)
         return chat_room
 
-
+# Initialize Socket.IO server
+sio = socketio.AsyncServer()
 class ShopMessageView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -514,6 +516,7 @@ class ShopMessageView(generics.GenericAPIView):
             print('the files',file)
             image, video = None, None
             audio = request.FILES.get('audio', None)
+            print('the audio',audio)
 
             if file:
                 if file.content_type.startswith('image/'):
@@ -534,6 +537,19 @@ class ShopMessageView(generics.GenericAPIView):
             )
             
             print ('the message details ',message)
+            
+                        # Emit message to WebSocket
+            sio.emit('receive_message', {
+                'message': message_text,
+                'room_id': room_id,
+                'sender_id': sender.id,
+                'receiver_id': receiver_id,
+                'image': message.image.url if message.image else None,
+                'audio': message.audio.url if message.audio else None,
+                'video': message.video.url if message.video else None,
+                'timestamp': message.timestamp.isoformat(),
+            }, room=room_id)
+
 
             return Response(ShopMessageSerializer(message).data, status=status.HTTP_201_CREATED)
 
