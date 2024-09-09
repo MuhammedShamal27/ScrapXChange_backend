@@ -13,6 +13,8 @@ from django.db.models import Q
 from .serializers import *
 from .generate_otp import *
 import logging
+import socketio
+
 # Create your views here.
 
 # -------- User Register -----------
@@ -314,7 +316,8 @@ class UserChatRoomsView(generics.ListAPIView):
 # -------- User Message -----------
 # ---------------------------------
 
-    
+# Initialize Socket.IO server
+sio = socketio.AsyncServer()
 class UserMessageView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -360,6 +363,18 @@ class UserMessageView(generics.GenericAPIView):
             )
             
             print ('the message details ',message)
+            
+            # Emit message to WebSocket
+            sio.emit('receive_message', {
+                'message': message_text,
+                'room_id': room_id,
+                'sender_id': sender.id,
+                'receiver_id': receiver_id,
+                'image': message.image.url if message.image else None,
+                'audio': message.audio.url if message.audio else None,
+                'video': message.video.url if message.video else None,
+                'timestamp': message.timestamp.isoformat(),
+            }, room=room_id)
 
             return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
 
