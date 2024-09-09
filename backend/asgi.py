@@ -53,6 +53,29 @@ async def send_message(sid, data):
         'video' : video,
         'audio' : audio,
     }, room=room_id)
+    
+    
+@sio.event
+async def offer(sid, data):
+    print('the calling is coming and offer',data)
+    room_id = data['roomId']
+    offer = data['offer']
+    await sio.emit('offer', {'offer': offer}, room=room_id)
+
+@sio.event
+async def answer(sid, data):
+    print('the calling is coming and answer',data)
+    room_id = data['roomId']
+    answer = data['answer']
+    await sio.emit('answer', {'answer': answer}, room=room_id)
+
+@sio.event
+async def ice_candidate(sid, data):
+    print('the calling is coming and ice_candidate',data)
+    room_id = data['roomId']
+    candidate = data['candidate']
+    await sio.emit('ice-candidate', {'candidate': candidate}, room=room_id)
+
 
 # Django and ASGI setup
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
