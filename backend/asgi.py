@@ -54,29 +54,29 @@ async def send_message(sid, data):
         'audio' : audio,
     }, room=room_id)
     
+@sio.event
+async def audio_call(sid, data):
+    print('form the audio_call ',data)
+    room_id = data['room_id']
+    message = data.get('message', '')  # Get message or default to empty string   
+    sender_id = data['sender_id']
+    receiver_id = data['receiver_id']
+    print(f"Message from {sender_id} to {receiver_id}: {message}")
+
+    await sio.emit('receive_message', {
+        'message': message,
+        'sender_id': sender_id,
+        'receiver_id': receiver_id,
+    }, room=room_id)
     
 @sio.event
-async def offer(sid, data):
-    print('the calling is coming and offer',data)
-    room_id = data['roomId']
-    offer = data['offer']
-    await sio.emit('offer', {'offer': offer}, room=room_id)
-
-@sio.event
-async def answer(sid, data):
-    print('the calling is coming and answer',data)
-    room_id = data['roomId']
-    answer = data['answer']
-    await sio.emit('answer', {'answer': answer}, room=room_id)
-
-@sio.event
-async def ice_candidate(sid, data):
-    print('the calling is coming and ice_candidate',data)
-    room_id = data['roomId']
-    candidate = data['candidate']
-    await sio.emit('ice-candidate', {'candidate': candidate}, room=room_id)
-
-
+async def join_call_room(sid, data):
+    print('the data comming in join room',data)
+    room_id = data['room_id']
+    callId = data['callId']
+    await sio.enter_room(sid, room_id,callId)
+    print(f"{sid} joined room {room_id}")
+    
 # Django and ASGI setup
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
@@ -109,4 +109,24 @@ application = socketio.ASGIApp(sio, django_asgi_app)  # Combine Socket.IO and Dj
 #         )
 #     ),
 # })
- 
+     
+# @sio.event
+# async def offer(sid, data):
+#     print(f'Received offer data: {data}')
+#     room_id = data['roomId']
+#     offer = data['offer']
+#     await sio.emit('offer', {'offer': offer}, room=room_id)
+
+# @sio.event
+# async def answer(sid, data):
+#     print(f'Received answer data: {data}')
+#     room_id = data['roomId']
+#     answer = data['answer']
+#     await sio.emit('answer', {'answer': answer}, room=room_id)
+
+# @sio.event
+# async def ice_candidate(sid, data):
+#     print(f'Received ICE candidate data: {data}')
+#     room_id = data['roomId']
+#     candidate = data['candidate']
+#     await sio.emit('ice-candidate', {'candidate': candidate}, room=room_id)
