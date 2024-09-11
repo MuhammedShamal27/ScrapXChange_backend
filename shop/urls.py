@@ -30,4 +30,5 @@ urlpatterns = [
     path('userchatrooms/',ShopChatRoomsView.as_view(),name='user-chatrooms'),
     path('userchatroom/<int:user_id>/',ShopCreateOrFetchChatRoomView.as_view(),name='create-user-chatroom'),
     path('userchatroom/<int:room_id>/messages/',ShopMessageView.as_view(),name='user-chatroom-messages'),
+    path('shopProfile/',ShopProfileView.as_view(),name='shop-profile'),
 ]

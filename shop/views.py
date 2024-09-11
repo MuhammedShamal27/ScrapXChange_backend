@@ -557,3 +557,14 @@ class ShopMessageView(generics.GenericAPIView):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         
+class ShopProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self,request):
+        print ('the request comming',request.data)
+        try:
+            shop_profile = Shop.objects.get(user=request.user)
+        except Shop.DoesNotExist:
+            return Response({"error":"ShopProfile not found."},status=status.HTTP_404_NOT_FOUND)
+        serializer =ShopProfileSerializer(shop_profile)
+        return Response(serializer.data)

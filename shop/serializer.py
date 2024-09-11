@@ -599,3 +599,12 @@ class ShopMessageSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Receiver is not part of this chat room.")
         
         return super().create(validated_data)
+    
+    
+class ShopProfileSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username',read_only=True)
+    email = serializers.EmailField(source ='user.email',read_only=True)
+
+    class Meta:
+        model = Shop
+        fields =  ['username', 'email', 'shop_name', 'shop_license_number', 'phone', 'address', 'place', 'profile_picture']
