@@ -13,7 +13,7 @@ from django.db.models import Q
 from .serializers import *
 from .generate_otp import *
 import logging
-import socketio
+import socketio # type: ignore
 
 # Create your views here.
 

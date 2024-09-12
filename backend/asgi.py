@@ -9,7 +9,12 @@ https://docs.djangoproject.com/en/5.0/howto/deployment/asgi/
 import os
 import django
 from django.core.asgi import get_asgi_application
-import socketio
+import socketio # type: ignore
+from datetime import datetime
+from user.models import *
+# from django.db import database_sync_to_async
+
+
 
 # Initialize AsyncServer with allowed CORS origins
 sio = socketio.AsyncServer(
@@ -17,7 +22,8 @@ sio = socketio.AsyncServer(
     cors_allowed_origins=['http://localhost:5173', 'http://127.0.0.1:5173']
 )
 
-# Define event handlers directly here
+
+
 @sio.event
 async def connect(sid, environ):
     print('Client connected:', sid)
@@ -44,14 +50,19 @@ async def send_message(sid, data):
     sender_id = data['sender_id']
     receiver_id = data['receiver_id']
     print(f"Message from {sender_id} to {receiver_id}: {message}")
+    
+    currenttimestamp = datetime.now().isoformat() + 'Z'  # UTC time in ISO 8601 format
+    print('the data is ',currenttimestamp)
+
 
     await sio.emit('receive_message', {
         'message': message,
-        'sender_id': sender_id,
-        'receiver_id': receiver_id,
+        'sender': sender_id,
+        'receiver': receiver_id,
         'image': image,
         'video' : video,
         'audio' : audio,
+        'timestamp': currenttimestamp  
     }, room=room_id)
     
 @sio.event
@@ -90,44 +101,3 @@ application = socketio.ASGIApp(sio, django_asgi_app)  # Combine Socket.IO and Dj
 
 
 
-
-# import os
-
-# from django.core.asgi import get_asgi_application
-# from channels.routing import ProtocolTypeRouter, URLRouter
-# from channels.auth import AuthMiddlewareStack
-# from user import routing
-
-
-# os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
-
-# # application = get_asgi_application()
-# application = ProtocolTypeRouter({
-#     "http": get_asgi_application(),
-#     "websocket": AuthMiddlewareStack(
-#         URLRouter(
-#             routing.websocket_urlpatterns
-#         )
-#     ),
-# })
-     
-# @sio.event
-# async def offer(sid, data):
-#     print(f'Received offer data: {data}')
-#     room_id = data['roomId']
-#     offer = data['offer']
-#     await sio.emit('offer', {'offer': offer}, room=room_id)
-
-# @sio.event
-# async def answer(sid, data):
-#     print(f'Received answer data: {data}')
-#     room_id = data['roomId']
-#     answer = data['answer']
-#     await sio.emit('answer', {'answer': answer}, room=room_id)
-
-# @sio.event
-# async def ice_candidate(sid, data):
-#     print(f'Received ICE candidate data: {data}')
-#     room_id = data['roomId']
-#     candidate = data['candidate']
-#     await sio.emit('ice-candidate', {'candidate': candidate}, room=room_id)

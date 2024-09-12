@@ -347,7 +347,7 @@ class CollectionRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CollectionRequest
-        fields = ['shop', 'date_requested', 'name', 'address', 'landmark', 'pincode', 'phone', 'upi', 'products']
+        fields = ['shop', 'date_requested', 'name', 'address', 'landmark', 'pincode', 'phone', 'upi', 'products','add_note']
         
     def to_internal_value(self, data):
         data = data.copy()
@@ -442,15 +442,15 @@ class ChatRoomSerializer(serializers.ModelSerializer):
         return room
     
 class MessageSerializer(serializers.ModelSerializer):
-    sender_username = serializers.CharField(source='sender.username', read_only=True)
-    receiver_username = serializers.CharField(source='receiver.username', read_only=True)
+    # sender_username = serializers.CharField(source='sender.username', read_only=True)
+    # receiver_username = serializers.CharField(source='receiver.username', read_only=True)
     audio = serializers.ImageField(required=False)
     image = serializers.ImageField(required=False)
     video = serializers.ImageField(required=False)
     
     class Meta:
         model = Message
-        fields = ['id', 'room', 'sender', 'receiver', 'timestamp', 'message','audio','image','video','sender_username', 'receiver_username']
+        fields = ['id', 'room', 'sender', 'receiver', 'timestamp', 'message','audio','image','video']
         
     def validate_image(self, value):
         if value and not value.name.endswith(('jpg', 'jpeg', 'png', 'gif')):

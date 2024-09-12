@@ -512,7 +512,26 @@ class PaymentSuccessfullSerializer(serializers.ModelSerializer):
         model = Transaction
         fields=['id','payment_method','payment_id','razorpay_order_id','collection_request']
         
+class TransactionSerializer(serializers.ModelSerializer):
+    transaction_products = TransactionProductSerializer(many=True)
 
+    class Meta:
+        model = Transaction
+        fields = ['total_quantity', 'total_price', 'date_picked', 'payment_method', 'transaction_products']
+
+    
+class InvoiceSerializer(serializers.ModelSerializer):
+    shop = ShopSerializer()
+    transactions = TransactionSerializer(many=True)
+
+    class Meta:
+        model = CollectionRequest
+        fields = [
+            'id', 'user', 'shop', 'date_requested', 'scheduled_date', 
+            'name', 'address', 'landmark', 'pincode', 'phone', 'upi',
+            'add_note', 'reject_message', 'is_accepted', 'is_rejected', 
+            'is_scheduled', 'is_collected', 'transactions'
+        ]
 
 # ---------------------------------------------------------------------------------------------
 

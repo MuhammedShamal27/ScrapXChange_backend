@@ -82,6 +82,7 @@ class CollectionRequest(models.Model):
     phone = models.CharField(max_length=15)
     upi = models.CharField(max_length=50)
     products = models.ManyToManyField(Product, related_name='collection_requests')  
+    add_note=models.TextField()
     reject_message = models.CharField(max_length=100 , blank=True)
     is_accepted = models.BooleanField(default=False)
     is_rejected = models.BooleanField(default=False)

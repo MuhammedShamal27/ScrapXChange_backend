@@ -10,9 +10,9 @@ from django.utils import timezone
 from . serializer import *
 from datetime import *
 from user.serializers import ChatRoomSerializer,MessageSerializer
-import razorpay
+import razorpay # type: ignore
 from django.db.models import Q
-import socketio
+import socketio # type: ignore
 
 # Create your views here.
 
@@ -258,7 +258,7 @@ class TodayPendingRequestsView(generics.ListAPIView):
         if not shop:
             return CollectionRequest.objects.none()
         print('this is the shop name',shop)
-        today = timezone.now().date()
+        today = datetime.now().date()
         return CollectionRequest.objects.filter(shop=shop,scheduled_date__lte=today, is_accepted=True ,is_collected=False)
         
 class PendingRequestsDetailsView(generics.RetrieveAPIView):
@@ -430,6 +430,37 @@ class VerifyPaymentView(APIView):
         except Exception as e:
             print('An error occurred:', str(e))
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class InvoiceView(APIView):
+    def get(self, request, id):
+        print('the requesting data ',request)
+        print('the requesting data ',id)
+        transcation = Transaction.objects.get(id=id)
+        print('the transcation  id is ',transcation)
+        collection_request=CollectionRequest.objects.get(id=transcation)
+        print('the collection request id is ',transcation)
+        serializer = InvoiceSerializer(collection_request)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class InvoiceView(APIView):
+    def get(self, request, id):
+        print('the requesting data ',id)
+
+        try:
+            transaction = Transaction.objects.get(id=id)
+            print('the transcation  id is ',transaction)
+            collection_request = transaction.collection_request
+            print('the collection_request  id is ',collection_request)
+            serializer = InvoiceSerializer(collection_request)
+            # Return the serialized data
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Transaction.DoesNotExist:
+            return Response({'error': 'Transaction not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        except CollectionRequest.DoesNotExist:
+            return Response({'error': 'Collection Request not found.'}, status=status.HTTP_404_NOT_FOUND)
 
 
 # -----------------------------------------------------------------------------------------------------------
