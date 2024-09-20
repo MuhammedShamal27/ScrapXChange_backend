@@ -382,4 +382,18 @@ class UserMessageView(generics.GenericAPIView):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         
-        
+class NotificationListView(generics.ListAPIView):
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Fetch notifications where the authenticated user is the receiver
+        return Notification.objects.filter(receiver=self.request.user)
+    
+class NotificationCreateView(generics.CreateAPIView):
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        # The sender will be the authenticated user
+        serializer.save(sender=self.request.user)

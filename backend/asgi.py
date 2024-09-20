@@ -1,28 +1,15 @@
-"""
-ASGI config for backend project.
-
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.0/howto/deployment/asgi/
-"""
 import os
 import django
 from django.core.asgi import get_asgi_application
 import socketio # type: ignore
 from datetime import datetime
 from user.models import *
-# from django.db import database_sync_to_async
-
-
 
 # Initialize AsyncServer with allowed CORS origins
 sio = socketio.AsyncServer(
     async_mode='asgi',
     cors_allowed_origins=['http://localhost:5173', 'http://127.0.0.1:5173']
 )
-
-
 
 @sio.event
 async def connect(sid, environ):
@@ -88,6 +75,32 @@ async def join_call_room(sid, data):
     callId = data['callId']
     await sio.enter_room(sid, room_id,callId)
     print(f"{sid} joined room {room_id}")
+    
+@sio.event
+async def notification(sid,data):
+    print('the notification',data)
+    room_id = data['room_id']
+    message = data['message']
+    sender_id = data['sender_id']
+    receiver_id = data['receiver_id']
+    print(f"Message from {sender_id} to {receiver_id}: {message}")
+    
+    # receiver_sid = connected_users.get(( receiver_id))
+    # if receiver_sid:
+    #     await sio.emit('notification', {
+    #         'message': message,
+    #         'sender_id': sender_id,
+    #         'receiver_id': receiver_id
+    #     }, to=receiver_sid)
+    #     print(f"Notification sent to  {receiver_id}")
+    # else:
+    #     print(f"{receiver_id} is not connected.")
+    
+    # await sio.emit('notification', {
+    #     'message': message,
+    #     'sender_id': sender_id,
+    # }, room=room_id)
+
     
 # Django and ASGI setup
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')

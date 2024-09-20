@@ -481,3 +481,8 @@ class MessageSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Receiver is not part of this chat room.")
         
         return super().create(validated_data)
+    
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id','sender','reciver','message','is_read','created_at']
