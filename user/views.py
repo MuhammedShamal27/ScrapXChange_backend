@@ -382,18 +382,47 @@ class UserMessageView(generics.GenericAPIView):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         
-class NotificationListView(generics.ListAPIView):
-    serializer_class = NotificationSerializer
-    permission_classes = [IsAuthenticated]
+# class NotificationListView(generics.ListAPIView):
+#     serializer_class = NotificationSerializer
+#     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        # Fetch notifications where the authenticated user is the receiver
-        return Notification.objects.filter(receiver=self.request.user)
+#     def get_queryset(self):
+#         # Fetch notifications where the authenticated user is the receiver
+#         return Notification.objects.filter(receiver=self.request.user)
     
-class NotificationCreateView(generics.CreateAPIView):
-    serializer_class = NotificationSerializer
+# class NotificationCreateView(generics.CreateAPIView):
+#     serializer_class = NotificationSerializer
+#     permission_classes = [IsAuthenticated]
+
+#     def perform_create(self, serializer):
+#         # The sender will be the authenticated user
+#         serializer.save(sender=self.request.user)
+
+
+
+class UserReportView(generics.CreateAPIView):
+    serializer_class = UserReportSerializer
     permission_classes = [IsAuthenticated]
 
-    def perform_create(self, serializer):
-        # The sender will be the authenticated user
-        serializer.save(sender=self.request.user)
+    def post(self, request):
+        print('the request is arriving',request.data)
+        receiver = request.data.get('receiver')
+        print('reciver_id',receiver)
+        reason = request.data.get('reason')
+        print('the reason',reason)
+
+        # Validate that receiver exists
+        try:
+            receiver = CustomUser.objects.get(id=receiver)
+        except CustomUser.DoesNotExist:
+            return Response({'error': 'Receiver not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Create the report using the serializer
+        serializer = self.get_serializer(data = request.data)
+        if not serializer.is_valid():
+            print('Serializer errors:', serializer.errors)  # Log errors
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save(sender=request.user, receiver=receiver)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        

@@ -8,6 +8,7 @@ from django.utils import timezone
 import datetime
 from shop.models import *
 from datetime import date,timedelta
+from scrapxchange_admin.models import *
 
 class UserProfilePhoneSerializer(serializers.ModelSerializer):
     class Meta:
@@ -482,7 +483,18 @@ class MessageSerializer(serializers.ModelSerializer):
         
         return super().create(validated_data)
     
-class NotificationSerializer(serializers.ModelSerializer):
+# class NotificationSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Notification
+#         fields = ['id','sender','reciver','message','is_read','created_at']
+
+
+class UserReportSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Notification
-        fields = ['id','sender','reciver','message','is_read','created_at']
+        model = Report
+        fields = ['receiver', 'reason']
+
+    def create(self, validated_data):
+        # Set the sender to the currently authenticated user
+        validated_data['sender'] = self.context['request'].user
+        return super().create(validated_data)

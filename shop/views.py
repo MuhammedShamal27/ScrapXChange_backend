@@ -599,3 +599,30 @@ class ShopProfileView(APIView):
             return Response({"error":"ShopProfile not found."},status=status.HTTP_404_NOT_FOUND)
         serializer =ShopProfileSerializer(shop_profile)
         return Response(serializer.data)
+    
+    
+class ShopReportView(generics.CreateAPIView):
+    serializer_class = ShopReportSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        print('the request is arriving',request.data)
+        receiver = request.data.get('receiver')
+        print('reciver_id',receiver)
+        reason = request.data.get('reason')
+        print('the reason',reason)
+
+        # Validate that receiver exists
+        try:
+            receiver = CustomUser.objects.get(id=receiver)
+        except CustomUser.DoesNotExist:
+            return Response({'error': 'Receiver not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Create the report using the serializer
+        serializer = self.get_serializer(data = request.data)
+        if not serializer.is_valid():
+            print('Serializer errors:', serializer.errors)  # Log errors
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save(sender=request.user, receiver=receiver)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
