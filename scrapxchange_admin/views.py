@@ -266,3 +266,49 @@ class RejectShopView(APIView):
             raise NotFound("User not found.")
         except Shop.DoesNotExist:
             raise NotFound("Shop not found.")
+        
+        
+class ReportView(generics.ListAPIView):
+    serializer_class = ReportSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Report.objects.exclude(is_checked=True)
+
+
+
+class ReportBlockUnblockView(generics.UpdateAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request,id):
+        # Try to fetch UserProfile first
+        print('the request data',request.data)
+        try:
+            user_profile = UserProfile.objects.get(user__id=id)
+            serializer = UserProfileBlockUnblockSerializer(user_profile, data=request.data, partial=True)
+        except UserProfile.DoesNotExist:
+            user_profile = None
+
+        # Try to fetch Shop if UserProfile does not exist
+        if not user_profile:
+            try:
+                shop = Shop.objects.get(user__id=id)
+                serializer = ShopBlockUnblockSerializer(shop, data=request.data, partial=True)
+            except Shop.DoesNotExist:
+                return Response({"error": "User or shop not found."}, status=404)
+
+        # Perform the update
+        if serializer.is_valid():
+            updated_instance = serializer.save()
+            status = "blocked" if updated_instance.is_blocked else "unblocked"
+            
+            report_id=request.data.get('reportId')
+            # Fetch and update the report associated with this user
+            report = Report.objects.get(id=report_id)  # Get the report with the receiver
+            if report:
+                report.is_checked = True  # Set is_checked to False
+                report.save()
+                
+            return Response({"message": f"{updated_instance.user.username} has been {status} successfully."})
+
+        return Response(serializer.errors, status=400)
