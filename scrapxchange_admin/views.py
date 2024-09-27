@@ -312,3 +312,43 @@ class ReportBlockUnblockView(generics.UpdateAPIView):
             return Response({"message": f"{updated_instance.user.username} has been {status} successfully."})
 
         return Response(serializer.errors, status=400)
+    
+    
+class DashboardDataView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Get all users excluding shops
+        users = CustomUser.objects.filter(is_shop=False, is_superuser=False)
+        total_users = users.count()
+
+        # Get all shops
+        shops = Shop.objects.all()
+        total_shops = shops.count()
+
+        # Get all collection requests
+        collection_requests = CollectionRequest.objects.all()
+        total_collection_requests = collection_requests.count()
+
+        # Get all unverified shops
+        unverified_shops = Shop.objects.filter(is_verified=False)
+        total_unverified_shops = unverified_shops.count()
+
+        # Serialize the data
+        user_serializer = UserSerializer(users, many=True)
+        shop_serializer = ShopSerializer(shops, many=True)
+        collection_request_serializer = CollectionRequestSerializer(collection_requests, many=True)
+        unverified_shop_serializer = ShopSerializer(unverified_shops, many=True)
+
+        data = {
+            'users': user_serializer.data,
+            'total_users': total_users,
+            'shops': shop_serializer.data,
+            'total_shops': total_shops,
+            'collection_requests': collection_request_serializer.data,
+            'total_collection_requests': total_collection_requests,
+            'unverified_shops': unverified_shop_serializer.data,
+            'total_unverified_shops': total_unverified_shops,
+        }
+
+        return Response(data)

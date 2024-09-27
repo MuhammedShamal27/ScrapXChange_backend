@@ -20,4 +20,5 @@ urlpatterns = [
     path('shop-request-list/<int:id>/reject/',RejectShopView.as_view(),name='admin_reject_shop'),
     path('reports/',ReportView.as_view(),name='report-list'),
     path('report-block-unblock/<int:id>/',ReportBlockUnblockView.as_view(),name='report-block-unblock'),
+    path('dashboard-data/', DashboardDataView.as_view(), name='dashboard-data'),
 ]

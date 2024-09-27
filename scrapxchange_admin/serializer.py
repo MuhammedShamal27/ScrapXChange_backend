@@ -116,3 +116,17 @@ class ShopBlockUnblockSerializer(serializers.ModelSerializer):
         instance.is_blocked = not instance.is_blocked
         instance.save()
         return instance
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'email', 'username', 'is_shop', 'is_superuser', 'date_joined', 'last_login']
+
+class CollectionRequestSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField()
+    shop = serializers.StringRelatedField()
+
+    class Meta:
+        model = CollectionRequest
+        fields = ['id', 'user', 'shop', 'date_requested', 'scheduled_date', 'name', 'address', 'landmark', 'pincode', 'phone', 'upi', 'products', 'add_note', 'is_accepted', 'is_rejected', 'is_scheduled', 'is_collected']
