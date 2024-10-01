@@ -10,6 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import *
 from user.models import CustomUser
 from rest_framework.generics import RetrieveAPIView
+from django.db.models import Count
 # Create your views here.
 
 
@@ -275,8 +276,34 @@ class ReportView(generics.ListAPIView):
     def get_queryset(self):
         return Report.objects.exclude(is_checked=True)
 
+class ReportReasonsView(generics.ListAPIView):
+    permission_classes= [IsAuthenticated]
+    def get(self, request,):
+        receiver_id=request.data.get('recevier_id')
+        # Fetch all reports for the specific shop
+        reports = Report.objects.filter(receiver_id=receiver_id)
 
+        # Count reports based on reasons
+        reason_counts = reports.values('reason').annotate(count=Count('reason'))
 
+        # Total reports
+        total_reports = reports.count()
+
+        # Prepare data for response
+        response_data = {
+            'reason_counts': {
+                'fraud': reason_counts.get('fraud', 0),
+                'inappropriate': reason_counts.get('inappropriate', 0),
+                'spam': reason_counts.get('spam', 0),
+                'other': reason_counts.get('other', 0),
+            },
+            'total_reports': total_reports,
+            'similar_reports': reports.values('sender__username', 'receiver__username', 'reason', 'description', 'timestamp')
+        }
+
+        return Response(response_data)
+        
+        
 class ReportBlockUnblockView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
 

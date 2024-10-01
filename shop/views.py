@@ -13,6 +13,9 @@ from user.serializers import ChatRoomSerializer,MessageSerializer
 import razorpay # type: ignore
 from django.db.models import Q
 import socketio # type: ignore
+from django.db.models import Sum
+from django.db.models.functions import TruncMonth
+from django.utils.timezone import now
 
 # Create your views here.
 
@@ -626,3 +629,30 @@ class ShopReportView(generics.CreateAPIView):
         serializer.save(sender=request.user, receiver=receiver)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    
+class ShopGraphDataView(APIView):
+    permission_classes=[IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        # Get transactions from the last 6 months
+        today = now().date()
+        six_months_ago = today - timedelta(days=180)
+
+        transactions = (
+            Transaction.objects.filter(date_picked__gte=six_months_ago)
+            .values('date_picked__month')
+            .annotate(total_spent=Sum('total_price'))
+            .order_by('date_picked__month')
+        )
+
+        # Format response data
+        months = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb']  # Example months
+        total_spent = [t['total_spent'] for t in transactions]  # Total price sums
+
+        data = {
+            'months': months,
+            'total_spent': total_spent,
+            'total_spent_sum': sum(total_spent),
+        }
+        return Response(data)

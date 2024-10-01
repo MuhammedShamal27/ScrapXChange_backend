@@ -19,6 +19,7 @@ urlpatterns = [
     path('shop-request-list/<int:id>/accept/',AcceptShopView.as_view(),name='admin_accept_shop'),
     path('shop-request-list/<int:id>/reject/',RejectShopView.as_view(),name='admin_reject_shop'),
     path('reports/',ReportView.as_view(),name='report-list'),
+    path('report-reason/<int:id>/',ReportReasonsView.as_view(),name='report-reason'),
     path('report-block-unblock/<int:id>/',ReportBlockUnblockView.as_view(),name='report-block-unblock'),
     path('dashboard-data/', DashboardDataView.as_view(), name='dashboard-data'),
 ]

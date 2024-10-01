@@ -638,3 +638,5 @@ class ShopReportSerializer(serializers.ModelSerializer):
         # Set the sender to the currently authenticated user
         validated_data['sender'] = self.context['request'].user
         return super().create(validated_data)
+    
+    
