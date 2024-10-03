@@ -60,6 +60,7 @@ class UserProfile(models.Model):
     phone=models.CharField(max_length=15,blank=True)
     alternative_phone=models.CharField(max_length=15,blank=True)
     profile_picture =models.ImageField(upload_to='Profile_pics',blank=True)
+    warning_count = models.IntegerField(default=0)
     is_blocked= models.BooleanField(default=False)
     otp = models.CharField(max_length=6,blank=True,null=True)
     otp_generated_at = models.DateTimeField(blank=True, null=True)

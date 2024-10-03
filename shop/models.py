@@ -12,6 +12,7 @@ class Shop(models.Model):
     address = models.TextField()
     place=models.CharField(max_length=100)
     profile_picture = models.ImageField(upload_to='shop_pics',blank=True)
+    warning_count = models.IntegerField(default=0)
     is_blocked = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)
     is_rejected = models.BooleanField(default=False)

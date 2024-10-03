@@ -11,6 +11,7 @@ from .models import *
 from user.models import CustomUser
 from rest_framework.generics import RetrieveAPIView
 from django.db.models import Count
+from django.shortcuts import get_object_or_404
 # Create your views here.
 
 
@@ -269,34 +270,54 @@ class RejectShopView(APIView):
             raise NotFound("Shop not found.")
         
         
-class ReportView(generics.ListAPIView):
+class ReportListView(generics.ListAPIView):
     serializer_class = ReportSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Report.objects.exclude(is_checked=True)
+    
+class ReportDetailsView(APIView):
+    permission_classes=[IsAuthenticated]
+    
+    def get(self,request,id):
+        try:
+            report= get_object_or_404(Report,id=id)
+            serializer = ReportSerializer(report)
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"details":str(e)},status=status.HTTP_400_BAD_REQUEST)
 
-class ReportReasonsView(generics.ListAPIView):
-    permission_classes= [IsAuthenticated]
-    def get(self, request,):
-        receiver_id=request.data.get('recevier_id')
-        # Fetch all reports for the specific shop
+class ReportReasonsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id):
+        receiver_id = id  # Get receiver_id from the URL parameter
+
+        # Fetch all reports for the specific receiver
         reports = Report.objects.filter(receiver_id=receiver_id)
 
         # Count reports based on reasons
         reason_counts = reports.values('reason').annotate(count=Count('reason'))
+
+        # Create a dictionary to accumulate reason counts
+        reason_data = {
+            'fraud': 0,
+            'inappropriate': 0,
+            'spam': 0,
+            'other': 0,
+        }
+
+        # Loop through the reason_counts and update the reason_data dictionary
+        for reason_count in reason_counts:
+            reason_data[reason_count['reason']] = reason_count['count']
 
         # Total reports
         total_reports = reports.count()
 
         # Prepare data for response
         response_data = {
-            'reason_counts': {
-                'fraud': reason_counts.get('fraud', 0),
-                'inappropriate': reason_counts.get('inappropriate', 0),
-                'spam': reason_counts.get('spam', 0),
-                'other': reason_counts.get('other', 0),
-            },
+            'reason_counts': reason_data,
             'total_reports': total_reports,
             'similar_reports': reports.values('sender__username', 'receiver__username', 'reason', 'description', 'timestamp')
         }
@@ -307,38 +328,55 @@ class ReportReasonsView(generics.ListAPIView):
 class ReportBlockUnblockView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
 
-    def patch(self, request,id):
-        # Try to fetch UserProfile first
-        print('the request data',request.data)
+    def patch(self, request, id):
+        print('request is ',request.data)
         try:
             user_profile = UserProfile.objects.get(user__id=id)
+            
             serializer = UserProfileBlockUnblockSerializer(user_profile, data=request.data, partial=True)
+            instance_type = "UserProfile"
         except UserProfile.DoesNotExist:
             user_profile = None
-
-        # Try to fetch Shop if UserProfile does not exist
-        if not user_profile:
             try:
                 shop = Shop.objects.get(user__id=id)
                 serializer = ShopBlockUnblockSerializer(shop, data=request.data, partial=True)
+                instance_type = "Shop"
             except Shop.DoesNotExist:
                 return Response({"error": "User or shop not found."}, status=404)
 
-        # Perform the update
         if serializer.is_valid():
-            updated_instance = serializer.save()
-            status = "blocked" if updated_instance.is_blocked else "unblocked"
-            
-            report_id=request.data.get('reportId')
-            # Fetch and update the report associated with this user
-            report = Report.objects.get(id=report_id)  # Get the report with the receiver
-            if report:
-                report.is_checked = True  # Set is_checked to False
+            action = request.data.get('action')  # Determine the action: warning, block, or unblock
+            if action == "warning":
+                # Increment the warning count
+                updated_instance = serializer.save(warning_count=serializer.instance.warning_count + 1)
+                status = "warned"
+            elif action == "block":
+                # Block the user/shop
+                updated_instance = serializer.save(is_blocked=True)
+                status = "blocked"
+            elif action == "unblock":
+                # Unblock the user/shop
+                updated_instance = serializer.save(is_blocked=False)
+                status = "unblocked"
+            else:
+                return Response({"error": "Invalid action."}, status=400)
+
+            report_id = request.data.get('reportId')
+            try:
+                report = Report.objects.get(id=report_id)
+                report.is_checked = True
                 report.save()
-                
-            return Response({"message": f"{updated_instance.user.username} has been {status} successfully."})
+            except Report.DoesNotExist:
+                return Response({"error": "Report not found."}, status=404)
+
+            return Response({
+                "message": f"{updated_instance.user.username if instance_type == 'UserProfile' else updated_instance.user.username}'s shop has been {status} successfully.",
+                "warning_count": updated_instance.warning_count,
+                "is_blocked": updated_instance.is_blocked
+            })
 
         return Response(serializer.errors, status=400)
+
     
     
 class DashboardDataView(APIView):
