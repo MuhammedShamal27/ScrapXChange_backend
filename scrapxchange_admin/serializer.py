@@ -68,7 +68,7 @@ class ReportSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Report
-        fields = ['id','sender', 'receiver', 'reason', 'is_checked', 
+        fields = ['id','sender', 'receiver', 'reason', 'description', 'is_checked', 
                   'timestamp', 'sender_name', 'receiver_name' 
                   ,'sender_is_blocked', 'receiver_is_blocked','receiver_warning_count','sender_warning_count']
 

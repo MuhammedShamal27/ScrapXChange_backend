@@ -492,7 +492,12 @@ class MessageSerializer(serializers.ModelSerializer):
 class UserReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = Report
-        fields = ['receiver', 'reason']
+        fields = ['receiver', 'reason' ,'description']
+        
+    def validate(self, data):
+        if data['reason'] == 'other' and not data.get('description'):
+            raise serializers.ValidationError("Description is required when reason is other.")
+        return data
 
     def create(self, validated_data):
         # Set the sender to the currently authenticated user
