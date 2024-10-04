@@ -656,3 +656,20 @@ class ShopGraphDataView(APIView):
             'total_spent_sum': sum(total_spent),
         }
         return Response(data)
+    
+from rest_framework.parsers import MultiPartParser, FormParser
+class UpdateShopProfileView(APIView):
+    parser_classes = [MultiPartParser, FormParser]  # Add parsers for multipart data
+    
+    def put(self, request, *args, **kwargs):
+        print('the request',request.data)
+        user = request.user
+        shop = get_object_or_404(Shop, user=user)
+        print('the shop',shop)
+        serializer = ShopProfileAndLocationSerializer(shop, data=request.data, partial=True)  # partial=True for updating only passed fields
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        print('the serilaizer error',serializer.errors)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

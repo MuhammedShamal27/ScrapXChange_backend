@@ -626,7 +626,7 @@ class ShopProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Shop
-        fields =  ['username', 'email', 'shop_name', 'shop_license_number', 'phone', 'address', 'place', 'profile_picture']
+        fields =  ['username', 'email', 'shop_name', 'shop_license_number', 'phone', 'address', 'place', 'profile_picture','latitude','longitude']
         
         
 class ShopReportSerializer(serializers.ModelSerializer):
@@ -640,3 +640,15 @@ class ShopReportSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
     
     
+class ShopProfileAndLocationSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = Shop
+        fields = ['profile_picture', 'latitude', 'longitude']  
+    def update(self, instance, validated_data):
+        # Update only the fields we are interested in
+        instance.profile_picture = validated_data.get('profile_picture', instance.profile_picture)
+        instance.latitude = validated_data.get('latitude', instance.latitude)
+        instance.longitude = validated_data.get('longitude', instance.longitude)
+        instance.save()
+        return instance

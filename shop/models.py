@@ -16,8 +16,8 @@ class Shop(models.Model):
     is_blocked = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)
     is_rejected = models.BooleanField(default=False)
-    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    latitude = models.DecimalField(max_digits=100, decimal_places=50, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=100, decimal_places=50, null=True, blank=True)
 
     def __str__(self):
         return self.shop_name
