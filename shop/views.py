@@ -16,6 +16,7 @@ import socketio # type: ignore
 from django.db.models import Sum
 from django.db.models.functions import TruncMonth
 from django.utils.timezone import now
+from rest_framework.parsers import MultiPartParser, FormParser
 
 # Create your views here.
 
@@ -657,7 +658,6 @@ class ShopGraphDataView(APIView):
         }
         return Response(data)
     
-from rest_framework.parsers import MultiPartParser, FormParser
 class UpdateShopProfileView(APIView):
     parser_classes = [MultiPartParser, FormParser]  # Add parsers for multipart data
     
@@ -666,10 +666,21 @@ class UpdateShopProfileView(APIView):
         user = request.user
         shop = get_object_or_404(Shop, user=user)
         print('the shop',shop)
-        serializer = ShopProfileAndLocationSerializer(shop, data=request.data, partial=True)  # partial=True for updating only passed fields
+        serializer = ShopProfileAndLocationSerializer(shop, data=request.data, partial=True)  
 
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         print('the serilaizer error',serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class ShopTransactionListView(generics.ListAPIView):
+    serializer_class = TransactionsSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Get the shop related to the current authenticated user
+        shop = self.request.user.shop
+        # Filter transactions related to the shop's collection requests
+        return Transaction.objects.filter(collection_request__shop=shop)
+    

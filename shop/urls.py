@@ -35,4 +35,5 @@ urlpatterns = [
     path('report/',ShopReportView.as_view(),name="shop-report"),
     path('graph/',ShopGraphDataView.as_view(),name='graph'),
     path('shop-profile/',UpdateShopProfileView.as_view(),name='shop-profile'),
+    path('shop-transactions/',ShopTransactionListView.as_view(),name='shop-transactions'),
 ]

@@ -652,3 +652,21 @@ class ShopProfileAndLocationSerializer(serializers.ModelSerializer):
         instance.longitude = validated_data.get('longitude', instance.longitude)
         instance.save()
         return instance
+    
+    
+    
+
+
+class CollectionRequestsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CollectionRequest
+        fields = ['name', 'address', 'pincode', 'phone', 'date_requested', 'scheduled_date']
+
+
+class TransactionsSerializer(serializers.ModelSerializer):
+    collection_request = CollectionRequestsSerializer()
+    transaction_products = TransactionProductSerializer(many=True)
+
+    class Meta:
+        model = Transaction
+        fields = ['id', 'collection_request', 'total_quantity', 'total_price', 'date_picked', 'payment_method', 'transaction_products']     
