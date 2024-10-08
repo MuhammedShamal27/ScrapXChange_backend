@@ -235,7 +235,7 @@ class HomePageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model=CustomUser
-        fields =['username','profile_picture']
+        fields =['id','username','profile_picture']
 
 class UserProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username',read_only=True)
@@ -425,6 +425,8 @@ class FetchLastMessageSerializer(serializers.ModelSerializer):
 class ChatRoomSerializer(serializers.ModelSerializer):
     shop = ShopSerializer()
     # messages = serializers.SerializerMethodField()
+    user = HomePageSerializer()
+    
     
     class Meta:
         model = ChatRoom
@@ -503,3 +505,20 @@ class UserReportSerializer(serializers.ModelSerializer):
         # Set the sender to the currently authenticated user
         validated_data['sender'] = self.context['request'].user
         return super().create(validated_data)
+    
+
+class TransactionProductSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name', read_only=True)
+
+    class Meta:
+        model = TransactionProduct
+        fields = ['product_name', 'quantity']
+
+class TransactionSerializer(serializers.ModelSerializer):
+    products = TransactionProductSerializer(source='transaction_products', many=True, read_only=True)
+    shop_name = serializers.CharField(source='collection_request.shop.shop_name', read_only=True)
+    user_email = serializers.CharField(source='collection_request.user.email', read_only=True)
+
+    class Meta:
+        model = Transaction
+        fields = ['id', 'user_email', 'shop_name', 'total_quantity', 'total_price', 'date_picked', 'payment_method', 'products']

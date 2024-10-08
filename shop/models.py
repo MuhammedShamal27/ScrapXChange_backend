@@ -2,7 +2,7 @@ from django.db import models
 from django.conf import settings
 from user.models import *
 
-# Create your models here.
+# Create your models here.  
 
 class Shop(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name='shop')

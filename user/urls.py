@@ -23,5 +23,6 @@ urlpatterns = [
     # path('notifications/', NotificationListView.as_view(), name='notification-list'),
     # path('notifications/create/', NotificationCreateView.as_view(), name='notification-create'),
     path('report/',UserReportView.as_view(),name="user-report"),
+    path('transactions/', CompletedTransactionListView.as_view(), name='completed-transactions'),
 
 ]

@@ -426,3 +426,15 @@ class UserReportView(generics.CreateAPIView):
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
         
+        
+class CompletedTransactionListView(generics.ListAPIView):
+    serializer_class = TransactionSerializer
+    permission_classes = [IsAuthenticated]  # Ensure that the user is authenticated
+
+    def get_queryset(self):
+        user = self.request.user  # Get the authenticated user
+        # Filter transactions where the related CollectionRequest is marked as collected
+        return Transaction.objects.filter(
+            collection_request__user=user,
+            collection_request__is_collected=True
+        )

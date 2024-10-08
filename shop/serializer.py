@@ -560,6 +560,7 @@ class ShopFetchLastMessageSerializer(serializers.ModelSerializer):
 class ShopChatRoomSerializer(serializers.ModelSerializer):
     # messages = serializers.SerializerMethodField()
     user = CustomUserSerializer()
+    shop = ShopSerializer()
     
     class Meta:
         model = ChatRoom

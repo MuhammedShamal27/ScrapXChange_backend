@@ -4,6 +4,7 @@ from django.core.asgi import get_asgi_application
 import socketio # type: ignore
 from datetime import datetime
 from user.models import *
+from asgiref.sync import sync_to_async
 
 # Initialize AsyncServer with allowed CORS origins
 sio = socketio.AsyncServer(
@@ -85,21 +86,21 @@ async def notification(sid,data):
     receiver_id = data['receiver_id']
     print(f"Message from {sender_id} to {receiver_id}: {message}")
     
-    # receiver_sid = connected_users.get(( receiver_id))
-    # if receiver_sid:
-    #     await sio.emit('notification', {
-    #         'message': message,
-    #         'sender_id': sender_id,
-    #         'receiver_id': receiver_id
-    #     }, to=receiver_sid)
-    #     print(f"Notification sent to  {receiver_id}")
-    # else:
-    #     print(f"{receiver_id} is not connected.")
+    # Use sync_to_async to save notification to the database
+    await sync_to_async(Notification.objects.create)(
+        sender_id=sender_id,
+        receiver_id=receiver_id,
+        message=message,
+    )
     
-    # await sio.emit('notification', {
-    #     'message': message,
-    #     'sender_id': sender_id,
-    # }, room=room_id)
+    # Emit notification to the shop user
+    await sio.emit('notification', {
+        'message': message,
+        'receiver_id': receiver_id  
+    },room=receiver_id)
+    
+    print(f"Notification emitted to room {room_id}: {message}")
+
 
     
 # Django and ASGI setup
@@ -109,8 +110,3 @@ django.setup()
 # ASGI application
 django_asgi_app = get_asgi_application()
 application = socketio.ASGIApp(sio, django_asgi_app)  # Combine Socket.IO and Django
-
-
-
-
-
