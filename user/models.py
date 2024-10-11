@@ -146,11 +146,16 @@ class Message(models.Model):
 
 
 class Notification(models.Model):
+    NOTIFICATION_TYPES = [
+        ('general', 'General'),
+        ('report', 'Report'),
+    ]
     sender = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='sent_notifications')
     receiver = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='received_notifications')
     message = models.TextField(blank=True, null=True)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, default='general')
     
     def __str__(self):
         return f"Notification from {self.sender} to {self.receiver}"

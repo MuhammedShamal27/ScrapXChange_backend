@@ -144,4 +144,28 @@ class CollectionRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CollectionRequest
-        fields = ['id', 'user', 'shop', 'date_requested', 'scheduled_date', 'name', 'address', 'landmark', 'pincode', 'phone', 'upi', 'products', 'add_note', 'is_accepted', 'is_rejected', 'is_scheduled', 'is_collected']
+        fields = ['id', 'user', 'shop', 'date_requested', 'scheduled_date', 'name', 
+                  'address', 'landmark', 'pincode', 'phone', 'upi', 'products', 
+                  'add_note', 'is_accepted', 'is_rejected', 'is_scheduled', 'is_collected']
+        
+class AllReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Report
+        fields = ['sender', 'receiver', 'reason', 'description', 'is_checked', 'timestamp']
+        
+        
+class AdminNotificationSerializer(serializers.ModelSerializer):
+    sender_name = serializers.SerializerMethodField()
+    receiver_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Notification
+        fields = ['sender', 'receiver', 'message', 'is_read', 'created_at', 'notification_type', 'sender_name', 'receiver_name']
+
+    # Method to get the sender's name
+    def get_sender_name(self, obj):
+        return obj.sender.username  # You can customize this to return any other field, like 'email'
+
+    # Method to get the receiver's name
+    def get_receiver_name(self, obj):
+        return obj.receiver.username

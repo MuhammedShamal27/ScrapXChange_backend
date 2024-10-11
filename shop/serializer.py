@@ -661,7 +661,7 @@ class ShopProfileAndLocationSerializer(serializers.ModelSerializer):
 class CollectionRequestsSerializer(serializers.ModelSerializer):
     class Meta:
         model = CollectionRequest
-        fields = ['name', 'address', 'pincode', 'phone', 'date_requested', 'scheduled_date']
+        fields = ['name', 'address', 'pincode', 'phone', 'date_requested', 'scheduled_date','is_accepted','is_rejected','is_scheduled']
 
 
 class TransactionsSerializer(serializers.ModelSerializer):
@@ -671,3 +671,26 @@ class TransactionsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
         fields = ['id', 'collection_request', 'total_quantity', 'total_price', 'date_picked', 'payment_method', 'transaction_products']     
+        
+
+class UserWithCompletedTransactionsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'email', 'username']
+
+class ShopDashboardSerializer(serializers.Serializer):
+    pending_collections = CollectionRequestsSerializer(many=True)
+    today_pending_collections = CollectionRequestsSerializer(many=True)
+    completed_transaction_users = UserWithCompletedTransactionsSerializer(many=True)
+    pending_requests = CollectionRequestsSerializer(many=True)
+    transactions = TransactionsSerializer(many=True)
+    total_collected = serializers.DecimalField(max_digits=10, decimal_places=2)
+    
+    
+class ShopNotificationSerializer(serializers.ModelSerializer):
+    sender = serializers.StringRelatedField()  # to display sender's username
+    receiver = serializers.StringRelatedField()  # to display receiver's username
+    
+    class Meta:
+        model = Notification
+        fields = ['id', 'sender', 'receiver', 'message', 'is_read', 'created_at']

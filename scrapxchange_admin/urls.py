@@ -23,4 +23,8 @@ urlpatterns = [
     path('report-reason/<int:id>/',ReportReasonsView.as_view(),name='report-reason'),
     path('report-block-unblock/<int:id>/',ReportBlockUnblockView.as_view(),name='report-block-unblock'),
     path('dashboard-data/', DashboardDataView.as_view(), name='dashboard-data'),
+    path('notification/', AdminReportNotificationsView.as_view(), name='notification'),
+    path('notifications/read/<int:notification_id>/', MarkNotificationAsReadView.as_view(), name='mark-notification-read'),
+    
+    
 ]

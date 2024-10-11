@@ -20,9 +20,11 @@ urlpatterns = [
     path('chatrooms/', UserChatRoomsView.as_view(), name='shops-chatrooms'), 
     path('chatroom/<int:shop_id>/',UserCreateOrFetchChatRoomView.as_view(),name='chatrooms'),
     path('chatroom/<int:room_id>/messages/',UserMessageView.as_view(),name='chatroom-messages'),
-    # path('notifications/', NotificationListView.as_view(), name='notification-list'),
-    # path('notifications/create/', NotificationCreateView.as_view(), name='notification-create'),
     path('report/',UserReportView.as_view(),name="user-report"),
-    path('transactions/', CompletedTransactionListView.as_view(), name='completed-transactions'),
+    path('transactions/',CompletedTransactionListView.as_view(), name='completed-transactions'),
+    path('notifications/',UserNotificationView.as_view(),name='user-notifications'),
+    path('notifications/<int:id>/read/', MarkNotificationAsReadView.as_view(), name='mark-notification-read'),
+    path('dashboard/', UserDashboardView.as_view(), name='user-dashboard'),
+
 
 ]

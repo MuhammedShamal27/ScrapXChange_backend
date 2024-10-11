@@ -684,3 +684,89 @@ class ShopTransactionListView(generics.ListAPIView):
         # Filter transactions related to the shop's collection requests
         return Transaction.objects.filter(collection_request__shop=shop)
     
+
+class ShopDashboardView(APIView):
+    def get(self, request):
+        shop = request.user.shop  # Assuming the shop is the logged-in user
+        today = now().date()
+
+        # 1. Pending collections for today
+        pending_collections = CollectionRequest.objects.filter(
+            shop=shop, is_collected=False, is_scheduled=True
+        )
+        
+        today_pending_collections = CollectionRequest.objects.filter(
+            shop=shop, is_collected=False, is_scheduled=True, scheduled_date__lte=today
+        )
+                
+        # 2. Users who completed transactions with the shop
+        completed_transaction_users = CustomUser.objects.filter(
+            collection_requests__transactions__collection_request__shop=shop
+        ).distinct()
+
+        # 3. Pending collection requests
+        pending_requests = CollectionRequest.objects.filter(
+            shop=shop, is_accepted=False, is_rejected=False,is_scheduled=False
+        )
+
+        # 4. All transactions related to the shop
+        transactions = Transaction.objects.filter(collection_request__shop=shop)
+        
+        total_collected = transactions.aggregate(Sum('total_price'))['total_price__sum'] or 0
+
+
+        data = {
+            'pending_collections': pending_collections,
+            'today_pending_collections':today_pending_collections,
+            'completed_transaction_users': completed_transaction_users,
+            'pending_requests': pending_requests,
+            'transactions': transactions,
+            'total_collected': total_collected
+        }
+
+        serializer = ShopDashboardSerializer(data)
+        return Response(serializer.data)
+    
+    
+class ShopNotificationsView(generics.ListAPIView):
+    serializer_class = ShopNotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Get the current shop user from the request and filter notifications
+        user = self.request.user
+        if hasattr(user, 'shop'):
+            # Filter notifications where the receiver is the current shop user
+            return Notification.objects.filter(receiver=user)
+        else:
+            return Notification.objects.none()  # If the user is not a shop, return no notifications
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        if not queryset.exists():
+            return Response({"message": "No notifications found."}, status=status.HTTP_200_OK)
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class MarkNotificationAsReadView(generics.UpdateAPIView):
+    serializer_class = ShopNotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, notification_id):
+        # Get the notification object by ID
+        try:
+            return Notification.objects.get(id=notification_id, receiver=self.request.user)
+        except Notification.DoesNotExist:
+            return None
+
+    def put(self, request, notification_id, *args, **kwargs):
+        notification = self.get_object(notification_id)
+        if not notification:
+            return Response({"error": "Notification not found or you do not have permission to access it."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Mark the notification as read
+        notification.is_read = True
+        notification.save()
+
+        return Response({"message": "Notification marked as read."}, status=status.HTTP_200_OK)

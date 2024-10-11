@@ -381,24 +381,6 @@ class UserMessageView(generics.GenericAPIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
-        
-# class NotificationListView(generics.ListAPIView):
-#     serializer_class = NotificationSerializer
-#     permission_classes = [IsAuthenticated]
-
-#     def get_queryset(self):
-#         # Fetch notifications where the authenticated user is the receiver
-#         return Notification.objects.filter(receiver=self.request.user)
-    
-# class NotificationCreateView(generics.CreateAPIView):
-#     serializer_class = NotificationSerializer
-#     permission_classes = [IsAuthenticated]
-
-#     def perform_create(self, serializer):
-#         # The sender will be the authenticated user
-#         serializer.save(sender=self.request.user)
-
-
 
 class UserReportView(generics.CreateAPIView):
     serializer_class = UserReportSerializer
@@ -438,3 +420,50 @@ class CompletedTransactionListView(generics.ListAPIView):
             collection_request__user=user,
             collection_request__is_collected=True
         )
+        
+class UserNotificationView(generics.ListAPIView):
+    serializer_class = UserNotificationSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        user = self.request.user
+        return Notification.objects.filter(
+            receiver=user
+        ).order_by('-created_at')
+        
+class MarkNotificationAsReadView(generics.UpdateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request, id):
+        try:
+            notification = Notification.objects.get(id=id, receiver=request.user)
+            notification.is_read = True
+            notification.save()
+            return Response({"message": "Notification marked as read"}, status=status.HTTP_200_OK)
+        except Notification.DoesNotExist:
+            return Response({"error": "Notification not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+class UserDashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        transactions = Transaction.objects.filter(collection_request__user=user)
+        pending_pickups = CollectionRequest.objects.filter(user=user, is_accepted=True, is_scheduled=True, is_collected=False)
+        total_collections = CollectionRequest.objects.filter(user=user, is_collected=True)
+        total_collected_value = total_collections.aggregate(total_price=models.Sum('transactions__total_price'))['total_price'] or 0
+        today = date.today()
+        today_pending_pickups = CollectionRequest.objects.filter(user=user, is_scheduled=True, scheduled_date__lte=today, is_collected=False)
+        pending_requests = CollectionRequest.objects.filter(user=user, is_accepted=False, is_scheduled=False)
+
+        dashboard_data = {
+            'transactions': transactions,
+            'pending_pickups': pending_pickups,
+            'total_collections': total_collections,
+            'total_collected_value': total_collected_value,
+            'today_pending_pickups': today_pending_pickups,
+            'pending_requests': pending_requests
+        }
+
+        serializer = DashboardSerializer(dashboard_data)
+        return Response(serializer.data)

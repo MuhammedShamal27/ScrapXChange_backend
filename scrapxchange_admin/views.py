@@ -391,29 +391,64 @@ class DashboardDataView(APIView):
         shops = Shop.objects.all()
         total_shops = shops.count()
 
-        # Get all collection requests
-        collection_requests = CollectionRequest.objects.all()
-        total_collection_requests = collection_requests.count()
-
         # Get all unverified shops
         unverified_shops = Shop.objects.filter(is_verified=False)
         total_unverified_shops = unverified_shops.count()
 
+        # Get all reports and pending reports
+        reports = Report.objects.all()  # Fetch all reports
+        pending_reports = Report.objects.filter(is_checked=False)  # Fetch only reports that are not checked
+        total_reports = reports.count()
+        total_pending_reports = pending_reports.count()
+
         # Serialize the data
         user_serializer = UserSerializer(users, many=True)
         shop_serializer = ShopSerializer(shops, many=True)
-        collection_request_serializer = CollectionRequestSerializer(collection_requests, many=True)
         unverified_shop_serializer = ShopSerializer(unverified_shops, many=True)
+        report_serializer = ReportSerializer(reports, many=True)
+        pending_report_serializer = ReportSerializer(pending_reports, many=True)
 
         data = {
             'users': user_serializer.data,
             'total_users': total_users,
             'shops': shop_serializer.data,
             'total_shops': total_shops,
-            'collection_requests': collection_request_serializer.data,
-            'total_collection_requests': total_collection_requests,
             'unverified_shops': unverified_shop_serializer.data,
             'total_unverified_shops': total_unverified_shops,
+            'reports': report_serializer.data,  
+            'total_reports': total_reports,  
+            'pending_reports': pending_report_serializer.data,  
         }
 
         return Response(data)
+
+
+
+class AdminReportNotificationsView(APIView):
+    permission_classes = [IsAdminUser]  # Ensure only superusers can access this
+
+    def get(self, request):
+        # Filter notifications where the notification_type is 'report'
+        notifications = Notification.objects.filter(
+            notification_type='report', 
+        ).order_by('-created_at')
+        
+        # Serialize the filtered notifications
+        serializer = AdminNotificationSerializer(notifications, many=True)
+        return Response(serializer.data)
+        
+class MarkNotificationAsReadView(APIView):
+    permission_classes = [IsAdminUser]  
+
+    def patch(self, request, notification_id):
+        try:
+            # Get the notification by ID
+            notification = Notification.objects.get(id=notification_id)
+
+            # Mark the notification as read
+            notification.is_read = True
+            notification.save()
+
+            return Response({"detail": "Notification marked as read"}, status=status.HTTP_200_OK)
+        except Notification.DoesNotExist:
+            return Response({"detail": "Notification not found"}, status=status.HTTP_404_NOT_FOUND)

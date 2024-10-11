@@ -522,3 +522,27 @@ class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
         fields = ['id', 'user_email', 'shop_name', 'total_quantity', 'total_price', 'date_picked', 'payment_method', 'products']
+        
+
+class UserNotificationSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = Notification
+        fields = ['id' , 'sender' , 'receiver' ,'message' ,'is_read' ,'created_at']
+    
+
+# Serializer for Collection Requests
+class RequestCollectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CollectionRequest
+        fields = ['id', 'scheduled_date', 'address', 'phone', 'is_collected','shop', 
+                  'date_requested', 'name', 'landmark', 'pincode', 'phone', 'upi','add_note']
+
+# Serializer for Dashboard Data
+class DashboardSerializer(serializers.Serializer):
+    transactions = TransactionSerializer(many=True)
+    pending_pickups = RequestCollectionSerializer(many=True)
+    total_collections = RequestCollectionSerializer(many=True)
+    total_collected_value = serializers.DecimalField(max_digits=10, decimal_places=2)
+    today_pending_pickups = RequestCollectionSerializer(many=True)
+    pending_requests = RequestCollectionSerializer(many=True)

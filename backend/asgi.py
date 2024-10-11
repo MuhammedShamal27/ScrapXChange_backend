@@ -80,26 +80,29 @@ async def join_call_room(sid, data):
 @sio.event
 async def notification(sid,data):
     print('the notification',data)
-    room_id = data['room_id']
     message = data['message']
     sender_id = data['sender_id']
     receiver_id = data['receiver_id']
-    print(f"Message from {sender_id} to {receiver_id}: {message}")
+    notification_type = data['notification_type']
+    print(f"Message from {sender_id} to,{notification_type} {receiver_id}: {message}")
     
     # Use sync_to_async to save notification to the database
     await sync_to_async(Notification.objects.create)(
         sender_id=sender_id,
         receiver_id=receiver_id,
         message=message,
+        notification_type=notification_type,
     )
     
     # Emit notification to the shop user
     await sio.emit('notification', {
         'message': message,
-        'receiver_id': receiver_id  
-    },room=receiver_id)
+        'sender_id' : sender_id,
+        'receiver_id': receiver_id,
+        'notification_type':notification_type,
+    })
     
-    print(f"Notification emitted to room {room_id}: {message}")
+    # print(f"Notification emitted to room {receiver_id}: {message}")
 
 
     
