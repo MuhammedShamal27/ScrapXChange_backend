@@ -108,7 +108,7 @@ ASGI_APPLICATION = 'backend.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'sxc',
+        'NAME': 'scrapxchangedb',
         'USER' : 'postgres',
         'PASSWORD' : '2706',
         'HOST' : 'localhost',

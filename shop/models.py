@@ -9,15 +9,17 @@ class Shop(models.Model):
     shop_name = models.CharField(max_length=33)
     shop_license_number = models.CharField(max_length=50,unique=True)
     phone = models.CharField(max_length=15,unique=True)
-    address = models.TextField()
-    place=models.CharField(max_length=100)
     profile_picture = models.ImageField(upload_to='shop_pics',blank=True)
+    address = models.TextField()
+    pincode = models.CharField(max_length=10)
+    state=models.CharField(max_length=100)
+    district=models.CharField(max_length=100)
+    latitude = models.DecimalField(max_digits=10, decimal_places=7 )
+    longitude = models.DecimalField(max_digits=10, decimal_places=7 )
     warning_count = models.IntegerField(default=0)
     is_blocked = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)
     is_rejected = models.BooleanField(default=False)
-    latitude = models.DecimalField(max_digits=100, decimal_places=50, null=True, blank=True)
-    longitude = models.DecimalField(max_digits=100, decimal_places=50, null=True, blank=True)
 
     def __str__(self):
         return self.shop_name

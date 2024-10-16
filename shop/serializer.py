@@ -17,12 +17,17 @@ class ShopRegisterSerializer(serializers.ModelSerializer):
     shop_name=serializers.CharField(required=True)
     shop_license_number=serializers.CharField(required=True)
     address=serializers.CharField(required=True)
-    place=serializers.CharField(required=True)
     phone=serializers.CharField(required=True)
+    pincode = serializers.CharField(required=True)
+    state = serializers.CharField(required=True)
+    district = serializers.CharField(required=True)
+    latitude = serializers.DecimalField(max_digits=10, decimal_places=7,required=True)
+    longitude = serializers.DecimalField(max_digits=10, decimal_places=7,required=True)
 
     class Meta:
         model = Shop
-        fields =['username','email','password','re_enter_password','shop_name','shop_license_number','address','place','phone']
+        fields =['username','email','password','re_enter_password','shop_name','shop_license_number','address','phone',
+                 'pincode' , 'state' , 'district' , 'latitude' ,'longitude' ]
 
 
     def validate_username(self,value):
@@ -43,20 +48,30 @@ class ShopRegisterSerializer(serializers.ModelSerializer):
         return value
     
     def validate_shop_license_number(self,value):
-        if not re.match(r'^[A-Z]{3}\d{11}$',value):
+        if not re.match(r'^[A-Z]{3}\d{8,13}$',value):
             raise serializers.ValidationError("Shop license number must start with uppercase alphabets followed by 11 digits.")
         if Shop.objects.filter(shop_license_number=value).exists():
             raise serializers.ValidationError("A shop with this license number already exists.")
         return value
     
     def validate_address(self,value):
-        if not re.match(r'^[A-Za-z0-9\s,\.]+$',value):
-            raise serializers.ValidationError("Address must not conatin special character other than dot(>) and comma(,).")
+        if not re.match(r'^[A-Za-z0-9\s,.\-/]+$',value):
+            raise serializers.ValidationError("Address must not contain special characters other than dot (.), comma (,), hyphen (-), or slash (/).")
         return value
     
-    def validate_place(self,value):
-        if not value.isalpha():
-            raise serializers.ValidationError("Place must conatin only alphabets.")
+    def validate_pincode(self, value):
+        if not re.match(r'^\d{6}$', value):
+            raise serializers.ValidationError("Pincode must be a 6-digit number.")
+        return value
+    
+    def validate_latitude(self, value):
+        if value < -90 or value > 90:
+            raise serializers.ValidationError("Latitude must be between -90 and 90.")
+        return value
+
+    def validate_longitude(self, value):
+        if value < -180 or value > 180:
+            raise serializers.ValidationError("Longitude must be between -180 and 180.")
         return value
     
     def validate_phone(self,value):
@@ -91,7 +106,11 @@ class ShopRegisterSerializer(serializers.ModelSerializer):
             'shop_name':validated_data['shop_name'],
             'shop_license_number' :validated_data['shop_license_number'],
             'address' :validated_data['address'],
-            'place' :validated_data['place'],
+            'pincode': validated_data['pincode'],
+            'state': validated_data['state'],
+            'district': validated_data['district'],
+            'latitude': validated_data['latitude'],
+            'longitude': validated_data['longitude'],
             'phone' :validated_data['phone'],
             'is_verified' :False,
         }
