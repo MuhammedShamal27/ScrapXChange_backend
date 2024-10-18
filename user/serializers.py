@@ -408,13 +408,19 @@ class ShopSerializer(serializers.ModelSerializer):
     class Meta:
         model = Shop
         fields ='__all__'
+        
+# ---------- Shops Listing In UserSide ------------------
 
 class ShopListSerializer(serializers.ModelSerializer):
-    shop= ShopSerializer()
+    user_id = serializers.IntegerField(source='user.id')
+    email = serializers.EmailField(source='user.email')
+    username = serializers.CharField(source='user.username')
+    is_active = serializers.BooleanField(source='user.is_active')
+    products = ProductSerializer(source='user.products', many=True)
     
     class Meta:
-        model = CustomUser
-        fields =['id','email','username','is_active','shop']
+        model = Shop
+        fields =['id', 'shop_name', 'email', 'username', 'is_active', 'address', 'state', 'district','latitude','longitude','products','user_id']
         
 class FetchLastMessageSerializer(serializers.ModelSerializer):
     class Meta:

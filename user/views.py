@@ -215,19 +215,34 @@ class EditUserProfileView(APIView):
 
 
 # -------- Shop List ---------------
+#According to the given State and District
 # ----------------------------------    
 
-class ShopListView(ListAPIView):
-    serializer_class = ShopSerializer
+class ShopListView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ShopListSerializer
 
     def get_queryset(self):
-        return Shop.objects.filter(
+        
+        queryset = Shop.objects.filter(
             user__is_superuser=False, 
             user__is_shop=True, 
             is_blocked=False, 
             is_verified=True, 
             is_rejected=False
         )
+        
+        # Extract query parameters
+        state = self.request.query_params.get('state', None)
+        district = self.request.query_params.get('district', None)
+
+        # Filter queryset based on state and district if provided
+        if state:
+            queryset = queryset.filter(state=state)
+        if district:
+            queryset = queryset.filter(district=district)
+
+        return queryset
 
 
 # -------- Shop Product List -------
@@ -252,11 +267,52 @@ class ShopProductListView(ListAPIView):
   
 class CollectionRequestCreateView(APIView):
     def post(self, request, *args, **kwargs):
-        print('the data',request.data)
+        print('the data', request.data)
+        
+        # Get the last request submitted by the user for the same shop
+        last_request = CollectionRequest.objects.filter(user=request.user, shop=request.data.get('shop')).order_by('-created_at').first()
+        
+        # If there's a previous request, compare it with the current data
+        if last_request:
+            current_request_data = request.data.copy()
+            last_request_data = {
+                'shop': last_request.shop.id,
+                'date_requested': last_request.date_requested,
+                'name': last_request.name,
+                'address': last_request.address,
+                'landmark': last_request.landmark,
+                'pincode': last_request.pincode,
+                'phone': last_request.phone,
+                'upi': last_request.upi,
+                'products': list(last_request.products.values_list('id', flat=True)),
+                'add_note': last_request.add_note,
+            }
+
+            # Convert the 'products' field to lists and compare
+            current_request_products = request.data.getlist('products[]') if 'products[]' in request.data else []
+            last_request_products = last_request_data['products']
+
+            # Check if the current request data matches the last one
+            if (
+                current_request_data['shop'] == str(last_request_data['shop']) and
+                current_request_data['date_requested'] == str(last_request_data['date_requested']) and
+                current_request_data['name'] == last_request_data['name'] and
+                current_request_data['address'] == last_request_data['address'] and
+                current_request_data['landmark'] == last_request_data['landmark'] and
+                current_request_data['pincode'] == last_request_data['pincode'] and
+                current_request_data['phone'] == last_request_data['phone'] and
+                current_request_data['upi'] == last_request_data['upi'] and
+                sorted(current_request_products) == sorted(last_request_products) and
+                current_request_data['add_note'] == last_request_data['add_note']
+            ):
+                return Response({"detail": "You have already submitted this request."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # If it's a new or different request, proceed with saving
         serializer = CollectionRequestSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
   
         
@@ -398,6 +454,11 @@ class UserReportView(generics.CreateAPIView):
             receiver = CustomUser.objects.get(id=receiver)
         except CustomUser.DoesNotExist:
             return Response({'error': 'Receiver not found.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if the user has already reported this receiver in the last week
+        one_week_ago = timezone.now() - timedelta(weeks=1)
+        if Report.objects.filter(sender=request.user, receiver=receiver, timestamp__gte=one_week_ago).exists():
+            return Response({'message': 'You have already reported this shop you can not reported multiple times.'}, status=status.HTTP_400_BAD_REQUEST)
 
         # Create the report using the serializer
         serializer = self.get_serializer(data = request.data)
