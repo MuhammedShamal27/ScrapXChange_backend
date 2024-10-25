@@ -25,10 +25,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-etyl9!v@z($^8@35epv^u9m1f13yih4tg0tqyd8g5z6(+%nwkr'
+SECRET_KEY = os.getenv('SECRET_KEY','fallback-secret-key-if-env-not-set')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 CORS_ALLOW_HEADERS = ["*"]
@@ -108,11 +108,11 @@ ASGI_APPLICATION = 'backend.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'scrapxchangedb',
-        'USER' : 'postgres',
-        'PASSWORD' : '2706',
-        'HOST' : 'localhost',
-        'PORT' : '5432',
+        'NAME': os.getenv('DB_NAME','default_db_name'),
+        'USER' : os.getenv('DB_USER','default_user'),
+        'PASSWORD' : os.getenv('DB_PASSWORD','default_passwordd'),
+        'HOST' : os.getenv('DB_HOST','localhost'),
+        'PORT' : os.getenv('DB_PORT','5432'),
     }
 }
 
@@ -180,33 +180,34 @@ SOCKETIO_ALLOWED_ORIGINS = [
 EMAIL_BACKEND ='django.core.mail.backends.smtp.EmailBackend'
 EMAIL_USE_TLS = True
 EMAIL_HOST ='smtp.gmail.com'
-EMAIL_HOST_USER='muhammedshamalps10@gmail.com'
-EMAIL_HOST_PASSWORD='hsug htkj dgvp hzph'
+EMAIL_HOST_USER=os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD=os.getenv('EMAIL_HOST_PASSWORD')
 EMAIL_PORT=587
 
 
 
-AUTHENTICATIONS_BACKENDS = [
-    'django.contirb.auth.backends.ModelBackend',
-    'User.backends.EmailBackend',
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'user.backends.EmailBackend',
 ]
 
 
-RAZORPAY_API_KEY = 'rzp_test_Vu3ybk6YCPR1WK'
-RAZORPAY_API_SECRET = 'kbEshpFjqHxwUnG2vsZ5VZ5T'
 
+RAZORPAY_API_KEY =os.getenv('RAZORPAY_API_KEY')
+RAZORPAY_API_SECRET = os.getenv('RAZORPAY_API_SECRET')
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-    },
-}
 
 # CHANNEL_LAYERS = {
 #     'default': {
-#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
-#         'CONFIG': {
-#             "hosts": [('127.0.0.1', 6379)],  # Ensure Redis is running and accessible
-#         },
+#         'BACKEND': 'channels.layers.InMemoryChannelLayer',
 #     },
 # }
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],  # Ensure Redis is running and accessible
+        },
+    },
+}

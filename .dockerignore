@@ -1,0 +1,29 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Environment variables
+.env
+
+# Django migrations (optional, if you want to exclude them)
+# */migrations/*
+
+# Media files
+/media/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Virtual environment
+env/
+venv/
+ENV/
+
+# Coverage reports
+coverage/
+*.cover
+
+# VS Code settings
+.vscode/
