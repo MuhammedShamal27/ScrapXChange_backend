@@ -15,7 +15,7 @@ def send_otp_via_email(email,otp):
         user_obj = CustomUser.objects.get(email=email)
         user_obj.otp=otp
         user_obj.save()
-        print(f"OTP sent successfully to {email}")
+        print(f"OTP sent successfully to {email} from generte otp")
         print(otp)
     except Exception as e:
         print (f"Error sending OTP to {email}:{e}")

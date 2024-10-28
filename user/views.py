@@ -1,6 +1,7 @@
 from django.shortcuts import get_object_or_404, render
-from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
+from django.db.models import Q
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
@@ -9,10 +10,10 @@ from rest_framework.permissions import IsAuthenticated,AllowAny
 from rest_framework.exceptions import NotFound,PermissionDenied
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import generics
-from django.db.models import Q
 from .serializers import *
 from .generate_otp import *
 import logging
+from .tasks import generate_and_send_otp
 import socketio # type: ignore
 
 # Create your views here.
@@ -20,20 +21,15 @@ import socketio # type: ignore
 # -------- User Register -----------
 # ----------------------------------
 
-logger = logging.getLogger(__name__)
 class UserRegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self,request):
-        logger.debug(f'Recieved data :{request.data}')
         user_serializer=UserRegistrationSerializer(data=request.data)
         if user_serializer.is_valid():
-            logger.info('valid data received , registering user...')
-            user_serializer.save()
-            logger.info('User registered successfully')
-            
+            user = user_serializer.save()
+            generate_and_send_otp.delay(user.email)           
             return Response({'message':'User registered succesfully'},status=status.HTTP_201_CREATED)
-        logger.warning(f'Invalid data :{user_serializer.errors}')
         return Response(user_serializer.errors,status=status.HTTP_400_BAD_REQUEST)
     
     
@@ -67,16 +63,15 @@ class ResendOTPView(APIView):
     permission_classes=[AllowAny]
 
     def post(self,request):
+        print(self.request.data)
         serializer = ResendOTPSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.validated_data['email']
-            user = CustomUser.objects.get(email=email)
-            user_profile =UserProfile.objects.get(user=user)
-            otp=generate_otp()
-            user_profile.otp=otp
-            user_profile.otp_generated_at = timezone.now()
+            user_profile = serializer.context['user_profile']
+            user_profile.otp = ''
+            user_profile.otp_generated_at = None
             user_profile.save()
-            send_otp_via_email(email,otp)
+            generate_and_send_otp.delay(email)
             return Response({'message':'OTP sent successfully.'},status=status.HTTP_200_OK)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
@@ -92,10 +87,7 @@ class PasswordResetRequestView(APIView):
             email = serializer.validated_data['email']
             user = CustomUser.objects.get(email=email)
             user_profile = UserProfile.objects.get(user=user)
-            otp = generate_otp()
-            user_profile.otp = otp
-            user_profile.save()
-            send_otp_via_email(email,otp)
+            generate_and_send_otp.delay(email)
             return Response({'message':'OTP sent for password reset.'},status=status.HTTP_200_OK)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 

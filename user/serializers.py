@@ -9,6 +9,7 @@ import datetime
 from shop.models import *
 from datetime import date,timedelta
 from scrapxchange_admin.models import *
+from . tasks import *
 
 class UserProfilePhoneSerializer(serializers.ModelSerializer):
     class Meta:
@@ -73,12 +74,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         except IntegrityError:
             raise serializers.ValidationError("A user with this email already exists.")
         
-        otp=generate_otp()
         user_profile , created = UserProfile.objects.get_or_create(
             user=user,
-            defaults={'phone':phone,'otp':otp , 'otp_generated_at': timezone.now()}
+            defaults={'phone':phone}
             )
-        send_otp_via_email(user.email,otp)
         return user
     
 
@@ -88,7 +87,6 @@ class OTPVerificationSerializer(serializers.Serializer):
 
     def validate(self,data):
         email=data.get('email')
-        print('this is called first',email)
         otp=data.get('otp')
 
         if not email or not otp:
@@ -105,7 +103,6 @@ class OTPVerificationSerializer(serializers.Serializer):
         
         if user_profile.otp_generated_at and(timezone.now() - user_profile.otp_generated_at > datetime.timedelta(minutes = 1)):
             raise serializers.ValidationError("OTP has expired , Please request for new one")
-        print('this',user_profile.otp)
         if user_profile.otp != otp:
             raise serializers.ValidationError("Invalid OTP")
         return data
@@ -114,7 +111,6 @@ class OTPVerificationSerializer(serializers.Serializer):
         email = self.validated_data['email']
         user=CustomUser.objects.get(email=email)
         user_profile = user.User_profile
-        print("what is this",user_profile)
         user.is_active=True
         user_profile.otp=""
         user_profile.otp_generated_at = None
@@ -131,8 +127,12 @@ class ResendOTPSerializer(serializers.Serializer):
             user_profile =UserProfile.objects.get(user=user)
             if user.is_active:
                 raise serializers.ValidationError('User is already active.')
+            self.context['user_profile'] = user_profile
+
         except CustomUser.DoesNotExist:
             raise serializers.ValidationError("User with this email does not exist.")
+        except UserProfile.DoesNotExist:
+            raise serializers.ValidationError("User profile not found.")
         return value
     
 class PasswordRestRequestSerializer(serializers.Serializer):
