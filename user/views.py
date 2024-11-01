@@ -473,7 +473,15 @@ class CompletedTransactionListView(generics.ListAPIView):
             collection_request__user=user,
             collection_request__is_collected=True
         )
-        
+
+class UserNotificationCreateView(generics.CreateAPIView):
+    queryset = Notification.objects.all()
+    serializer_class = UserNotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save()
+
 class UserNotificationView(generics.ListAPIView):
     serializer_class = UserNotificationSerializer
     permission_classes = [IsAuthenticated]

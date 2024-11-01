@@ -352,10 +352,12 @@ class CollectionRequestSerializer(serializers.ModelSerializer):
         
     def to_internal_value(self, data):
         data = data.copy()
-        products_data = data.getlist('products[]')
+        # products_data = data.getlist('products[]') if not working change to this and comment the below one.
+        products_data = data.get('products', [])
         print('the internal value',products_data)
         if products_data:
-            data.setlist('products', products_data)
+            # data.setlist('products', products_data) if not working change to this and comment the below one.
+            data['products'] = products_data
         return super().to_internal_value(data)
     
     def validate_date_requested(self, value):
@@ -534,7 +536,7 @@ class UserNotificationSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Notification
-        fields = ['id' , 'sender' , 'receiver' ,'message' ,'is_read' ,'created_at']
+        fields = ['id' , 'sender' , 'receiver' ,'message' ,'is_read' ,'created_at','notification_type']
     
 
 # Serializer for Collection Requests

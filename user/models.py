@@ -89,6 +89,7 @@ class CollectionRequest(models.Model):
     is_rejected = models.BooleanField(default=False)
     is_scheduled = models.BooleanField(default=False)
     is_collected = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         shop_name = self.shop.shop_name if self.shop else "Deleted Shop"

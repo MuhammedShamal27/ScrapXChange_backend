@@ -56,10 +56,12 @@ INSTALLED_APPS = [
     'user',
     'shop',
     'scrapxchange_admin',
+    'notifications',
     'rest_framework',
     'corsheaders',
     'channels',
     'django_celery_results',
+    "fcm_django",
 ]
 
 MIDDLEWARE = [
@@ -68,7 +70,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    # 'django.middleware.csrf.CsrfResponseMiddleware',
+        # 'django.middleware.csrf.CsrfResponseMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -141,7 +143,12 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'backend/static'),  
+]
+
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -156,6 +163,11 @@ CORS_ALLOW_CREDENTIALS=True
 SOCKETIO_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
 ]
 
 EMAIL_BACKEND ='django.core.mail.backends.smtp.EmailBackend'
@@ -173,25 +185,32 @@ AUTHENTICATION_BACKENDS = [
 RAZORPAY_API_KEY =os.getenv('RAZORPAY_API_KEY')
 RAZORPAY_API_SECRET = os.getenv('RAZORPAY_API_SECRET')
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-    },
-}
 # CHANNEL_LAYERS = {
 #     'default': {
-#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
-#         'CONFIG': {
-#             "hosts": [('127.0.0.1', 6379)],  # Ensure Redis is running and accessible
-#         },
+#         'BACKEND': 'channels.layers.InMemoryChannelLayer',
 #     },
 # }
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('redis', 6379)],  
+        },
+    },
+}
 
 # Broker and backend settings for Celery
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True 
+
+
+FCM_DJANGO_SETTINGS = {
+    "FCM_SERVER_KEY": "23280ddda6b362aea536ab681da82a9adc4e13d7",  
+    "ONE_DEVICE_PER_USER": True,  
+    "DELETE_INACTIVE_DEVICES": True,  
+}

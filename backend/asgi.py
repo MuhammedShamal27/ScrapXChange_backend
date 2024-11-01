@@ -3,14 +3,13 @@ import django
 import socketio  # type: ignore
 from datetime import datetime
 from asgiref.sync import sync_to_async
+import json
 
 # Django and ASGI setup
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
-
 from django.core.asgi import get_asgi_application
 from user.models import *  # Import after django.setup()
-
 # Initialize AsyncServer with allowed CORS origins
 sio = socketio.AsyncServer(
     async_mode='asgi',
@@ -85,6 +84,8 @@ async def join_call_room(sid, data):
     await sio.enter_room(sid, room_id)
     print(f"{sid} joined call room {room_id}")
 
+
+
 # ASGI application
 django_asgi_app = get_asgi_application()
-application = socketio.ASGIApp(sio, django_asgi_app)  # Combine Socket.IO and Django
+application = socketio.ASGIApp(sio, django_asgi_app) 
