@@ -143,12 +143,7 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'backend/static'),  
-]
-
+STATIC_URL = 'static/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -182,8 +177,6 @@ AUTHENTICATION_BACKENDS = [
     'user.backends.EmailBackend',
 ]
 
-RAZORPAY_API_KEY =os.getenv('RAZORPAY_API_KEY')
-RAZORPAY_API_SECRET = os.getenv('RAZORPAY_API_SECRET')
 
 # CHANNEL_LAYERS = {
 #     'default': {

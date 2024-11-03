@@ -529,7 +529,7 @@ class PaymentSuccessfullSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Transaction
-        fields=['id','payment_method','payment_id','razorpay_order_id','collection_request']
+        fields=['id','payment_method','payment_id','collection_request']
         
 class TransactionSerializer(serializers.ModelSerializer):
     transaction_products = TransactionProductSerializer(many=True)

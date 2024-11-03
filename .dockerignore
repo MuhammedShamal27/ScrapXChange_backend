@@ -2,12 +2,6 @@
 __pycache__/
 *.py[cod]
 
-# Environment variables
-.env
-
-# Django migrations (optional, if you want to exclude them)
-# */migrations/*
-
 # Media files
 /media/
 
