@@ -25,9 +25,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY','fallback-secret-key-if-env-not-set')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["74.179.83.230","*"]
 CORS_ALLOW_HEADERS = ["*"]
 
 REST_FRAMEWORK = {
@@ -106,7 +106,7 @@ DATABASES = {
         'NAME': os.getenv('DB_NAME','default_db_name'),
         'USER' : os.getenv('DB_USER','default_user'),
         'PASSWORD' : os.getenv('DB_PASSWORD','default_password'),
-        'HOST' : os.getenv('DB_HOST','localhost'),
+        'HOST' : os.getenv('DB_HOST','db'),
         'PORT' : os.getenv('DB_PORT','5432'),
     }
 }
@@ -144,6 +144,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -156,13 +157,11 @@ CORS_ALLOW_ALL_ORIGINS=True
 CORS_ALLOW_CREDENTIALS=True
 
 SOCKETIO_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    "http://74.179.83.230",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
+    "http://74.179.83.230",
 ]
 
 EMAIL_BACKEND ='django.core.mail.backends.smtp.EmailBackend'
@@ -177,12 +176,6 @@ AUTHENTICATION_BACKENDS = [
     'user.backends.EmailBackend',
 ]
 
-
-# CHANNEL_LAYERS = {
-#     'default': {
-#         'BACKEND': 'channels.layers.InMemoryChannelLayer',
-#     },
-# }
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
