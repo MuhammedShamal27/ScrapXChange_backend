@@ -15,6 +15,7 @@ sio = socketio.AsyncServer(
     async_mode='asgi',
     cors_allowed_origins=[
         'http://74.179.83.230'
+        'http://localhost:5173',
     ]
 )
 

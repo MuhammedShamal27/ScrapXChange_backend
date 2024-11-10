@@ -646,7 +646,7 @@ class ShopProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Shop
-        fields =  ['username', 'email', 'shop_name', 'shop_license_number', 'phone', 'address', 'place', 'profile_picture','latitude','longitude']
+        fields =  ['username', 'email', 'shop_name', 'shop_license_number', 'phone', 'address','pincode', 'profile_picture','latitude','longitude']
         
         
 class ShopReportSerializer(serializers.ModelSerializer):

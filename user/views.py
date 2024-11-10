@@ -378,6 +378,7 @@ class UserMessageView(generics.GenericAPIView):
 
     def post(self, request, room_id):
         print('the coming request is in post ',request.data)
+        print('the coming files ', request.FILES)
         try:
             room = get_object_or_404(ChatRoom, id=room_id)
             sender = request.user  # Assuming the user is authenticated

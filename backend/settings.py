@@ -158,10 +158,12 @@ CORS_ALLOW_CREDENTIALS=True
 
 SOCKETIO_ALLOWED_ORIGINS = [
     "http://74.179.83.230",
+    # 'http://localhost:5173',
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://74.179.83.230",
+    # 'http://localhost:5173',
 ]
 
 EMAIL_BACKEND ='django.core.mail.backends.smtp.EmailBackend'
@@ -186,8 +188,10 @@ CHANNEL_LAYERS = {
 }
 
 # Broker and backend settings for Celery
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
-CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
+# CELERY_BROKER_URL="redis://localhost:6379/0"
+# CELERY_RESULT_BACKEND="redis://localhost:6379/0"
+# CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
+# CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
