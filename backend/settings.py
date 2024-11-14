@@ -25,9 +25,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY','fallback-secret-key-if-env-not-set')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ["74.179.83.230","*"]
+# ALLOWED_HOSTS = [
+#     "localhost",
+#     "74.179.83.230",
+#     "scrapxchange.store",
+#     "www.scrapxchange.store",
+# ]
+ALLOWED_HOSTS = [
+    "http://localhost:5173",
+    "74.179.83.230",
+    "*",
+    "https://scrapxchange.store",
+    "https://www.scrapxchange.store",
+]
+
 CORS_ALLOW_HEADERS = ["*"]
 
 REST_FRAMEWORK = {
@@ -70,7 +83,6 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-        # 'django.middleware.csrf.CsrfResponseMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -106,7 +118,7 @@ DATABASES = {
         'NAME': os.getenv('DB_NAME','default_db_name'),
         'USER' : os.getenv('DB_USER','default_user'),
         'PASSWORD' : os.getenv('DB_PASSWORD','default_password'),
-        'HOST' : os.getenv('DB_HOST','db'),
+        'HOST' : os.getenv('DB_HOST','localhost'),
         'PORT' : os.getenv('DB_PORT','5432'),
     }
 }
@@ -146,8 +158,11 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+
 MEDIA_URL = '/media/'
+# MEDIA_ROOT = '/app/media'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -158,12 +173,25 @@ CORS_ALLOW_CREDENTIALS=True
 
 SOCKETIO_ALLOWED_ORIGINS = [
     "http://74.179.83.230",
-    # 'http://localhost:5173',
+    'http://localhost:5173',
+    'https://scrapxchange.store',
+    'https://www.scrapxchange.store',
 ]
+
+CORS_ALLOWED_ORIGINS = [
+    'https://scrapxchange.store',
+    'https://www.scrapxchange.store',
+]
+
+# CSRF_TRUSTED_ORIGINS = [
+#     "https://scrapxchange.store",
+#     "https://www.scrapxchange.store",
+# ]
+
 
 CSRF_TRUSTED_ORIGINS = [
     "http://74.179.83.230",
-    # 'http://localhost:5173',
+    'http://localhost:5173',
 ]
 
 EMAIL_BACKEND ='django.core.mail.backends.smtp.EmailBackend'
@@ -188,8 +216,8 @@ CHANNEL_LAYERS = {
 }
 
 # Broker and backend settings for Celery
-# CELERY_BROKER_URL="redis://localhost:6379/0"
-# CELERY_RESULT_BACKEND="redis://localhost:6379/0"
+CELERY_BROKER_URL="redis://localhost:6379/0"
+CELERY_RESULT_BACKEND="redis://localhost:6379/0"
 # CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
 # CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']

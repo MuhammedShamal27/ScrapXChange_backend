@@ -280,6 +280,7 @@ class ScrapCollectionView(APIView):
     serializer_class = ScrapCollectionSerializer
 
     def post(self, request, *args, **kwargs):
+        print('this is request ,',request.data)
         shop = self.request.user.shop  
         data = request.data
 
@@ -293,21 +294,30 @@ class ScrapCollectionView(APIView):
         if collection_request.shop != shop:
             return Response({'error': 'This collection request does not belong to your shop.'}, status=status.HTTP_403_FORBIDDEN)
 
-        products = []
-        index = 0
+        # products = []
+        # index = 0
 
-        while True:
-            product_id_key = f'formData[{index}][id]'
-            quantity_key = f'formData[{index}][quantity]'
-            if product_id_key in data and quantity_key in data:
-                product_data = {
-                    'product_id': data[product_id_key],
-                    'quantity': data[quantity_key]
-                }
-                products.append(product_data)
-                index += 1
-            else:
-                break
+        # while True:
+        #     product_id_key = f'formData[{index}][id]'
+        #     quantity_key = f'formData[{index}][quantity]'
+        #     if product_id_key in data and quantity_key in data:
+        #         product_data = {
+        #             'product_id': data[product_id_key],
+        #             'quantity': data[quantity_key]
+        #         }
+        #         products.append(product_data)
+        #         index += 1
+        #     else:
+        #         break
+        
+        products = []
+        for item in data.get('formData', []):
+            product_data = {
+                'product_id': item.get('id'),
+                'quantity': item.get('quantity')
+            }
+            products.append(product_data)
+
 
         serializer_data = {
             'collection_request_id': collection_request_id,
@@ -652,7 +662,16 @@ class ShopDashboardView(APIView):
 
         serializer = ShopDashboardSerializer(data)
         return Response(serializer.data)
-    
+
+
+class ShopNotificationCreateView(generics.CreateAPIView):
+    queryset = Notification.objects.all()
+    serializer_class = ShopNotificationCreateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save()
+        
     
 class ShopNotificationsView(generics.ListAPIView):
     serializer_class = ShopNotificationSerializer

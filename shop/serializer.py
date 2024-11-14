@@ -209,6 +209,7 @@ class CategoryCreateSerializer(serializers.ModelSerializer):
         return value
     
     def validate_image(self, value):
+        print(value)
         if not value or not hasattr(value, 'content_type'):
             raise serializers.ValidationError("Please upload a valid image.")
         if not value.content_type.startswith('image'):
@@ -234,6 +235,14 @@ class CategoryCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return Category.objects.create(**validated_data)
+    
+    def to_representation(self, instance):
+        """Customize the serialized output."""
+        representation = super().to_representation(instance)
+        # Ensure the image field returns only the relative path
+        if instance.image:
+            representation['image'] = instance.image.url  # Will only include the relative path
+        return representation
         
 class CategoryUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -291,6 +300,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class ProductCreateSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(use_url=False)
 
     class Meta:
         model = Product
@@ -492,17 +502,18 @@ class ScrapCollectionSerializer(serializers.ModelSerializer):
         transaction.save()
 
         return transaction
+    
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'name']
+        fields = ['id', 'name','image' ,'description']
 
 class ProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'price', 'category']
+        fields = ['id', 'name', 'price', 'category','image']
 
 class TransactionProductSerializer(serializers.ModelSerializer):
     product = ProductSerializer()
@@ -707,9 +718,17 @@ class ShopDashboardSerializer(serializers.Serializer):
     
     
 class ShopNotificationSerializer(serializers.ModelSerializer):
-    sender = serializers.StringRelatedField()  # to display sender's username
-    receiver = serializers.StringRelatedField()  # to display receiver's username
+    sender = serializers.StringRelatedField()  
+    receiver = serializers.StringRelatedField()  
     
     class Meta:
         model = Notification
         fields = ['id', 'sender', 'receiver', 'message', 'is_read', 'created_at']
+        
+class ShopNotificationCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'sender', 'receiver', 'message', 'notification_type']
+
+    def create(self, validated_data):
+        return Notification.objects.create(**validated_data)

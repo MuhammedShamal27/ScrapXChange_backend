@@ -187,6 +187,7 @@ class EditUserProfileView(APIView):
         return Response(serializer.data)
 
     def put(self, request):
+        print('the coming request ',request.data)
         try:
             user_profile = UserProfile.objects.get(user=request.user)
         except UserProfile.DoesNotExist:

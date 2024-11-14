@@ -35,6 +35,7 @@ urlpatterns = [
     path('shop-profile/',UpdateShopProfileView.as_view(),name='shop-profile'),
     path('shop-transactions/',ShopTransactionListView.as_view(),name='shop-transactions'),
     path('shop-dashboard/',ShopDashboardView.as_view(),name='shop-dashboard'),
+    path('shop-notifications/create/',ShopNotificationCreateView.as_view(),name='shop-notification-creation'),
     path('shop-notification/',ShopNotificationsView.as_view(),name='shop-notification'),
     path('notifications/<int:notification_id>/mark-as-read/', MarkNotificationAsReadView.as_view(), name='mark-notification-as-read'),
     

@@ -288,11 +288,9 @@ class EditUserProfileSerializer(serializers.ModelSerializer):
         return value
     
     def validate_profile_picture(self, value):
-        # Example validation: Check the size of the image (max 2MB)
         max_size = 2 * 1024 * 1024  # 2MB
         if value and value.size > max_size:
             raise serializers.ValidationError("Profile picture size cannot exceed 2MB.")
-        # You can also add other validations like checking file type if necessary
         return value
     
     def update(self, instance, validated_data):
