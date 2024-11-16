@@ -207,14 +207,7 @@ class CategoryCreateSerializer(serializers.ModelSerializer):
         if not value.isalpha():
             raise serializers.ValidationError("Category name should only contain alphabets.")
         return value
-    
-    def validate_image(self, value):
-        print(value)
-        if not value or not hasattr(value, 'content_type'):
-            raise serializers.ValidationError("Please upload a valid image.")
-        if not value.content_type.startswith('image'):
-            raise serializers.ValidationError("File must be an image.")
-        return value
+
 
     def validate_description(self, value):
         if not value:
@@ -224,7 +217,7 @@ class CategoryCreateSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
-        print('Data in validate method:', data)
+        print(f"Data in validate method: {data}")
         if not data.get('name') or not data.get('image') or not data.get('description'):
             raise serializers.ValidationError("All fields (name, image, and description) must be filled.")
         user = self.context['request'].user
@@ -261,12 +254,6 @@ class CategoryUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Category name should only contain alphabets.")
         return value
 
-    def validate_image(self, value):
-        if value and not hasattr(value, 'content_type'):
-            raise serializers.ValidationError("Please upload a valid image.")
-        if value and not value.content_type.startswith('image'):
-            raise serializers.ValidationError("File must be an image.")
-        return value
 
     def validate_description(self, value):
         if value and len(value) < 10:
@@ -300,8 +287,6 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class ProductCreateSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField(use_url=False)
-
     class Meta:
         model = Product
         fields = ['name', 'price', 'category', 'image']
@@ -323,13 +308,6 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         if not Category.objects.filter(id=value.id, user=user).exists():
             raise serializers.ValidationError("Selected category does not exist in your shop or you do not have permission to use it.")
-        return value
-
-    def validate_image(self, value):
-        if value and not hasattr(value, 'content_type'):
-            raise serializers.ValidationError("Please upload a valid image.")
-        if value and not value.content_type.startswith('image'):
-            raise serializers.ValidationError("File must be an image.")
         return value
 
     def validate(self, data):
@@ -369,13 +347,6 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         if not Category.objects.filter(id=value.id, user=user).exists():
             raise serializers.ValidationError("Selected category does not exist in your shop or you do not have permission to use it.")
-        return value
-    
-    def validate_image(self, value):
-        if value and not hasattr(value, 'content_type'):
-            raise serializers.ValidationError("Please upload a valid image.")
-        if value and not value.content_type.startswith('image'):
-            raise serializers.ValidationError("File must be an image.")
         return value
     
     def validate(self, data):
@@ -507,6 +478,8 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'name','image' ,'description']
+        
+
 
 class ProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer()

@@ -25,23 +25,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY','fallback-secret-key-if-env-not-set')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-# ALLOWED_HOSTS = [
-#     "localhost",
-#     "74.179.83.230",
-#     "scrapxchange.store",
-#     "www.scrapxchange.store",
-# ]
-ALLOWED_HOSTS = [
-    "http://localhost:5173",
-    "74.179.83.230",
-    "*",
-    "https://scrapxchange.store",
-    "https://www.scrapxchange.store",
-]
+ALLOWED_HOSTS = ["*", 'http://13.66.191.134','https://royalsofa.online',]
 
-CORS_ALLOW_HEADERS = ["*"]
+CORS_ALLOW_HEADERS = ["*", 'http://13.66.191.134','https://royalsofa.online']
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -75,6 +63,8 @@ INSTALLED_APPS = [
     'channels',
     'django_celery_results',
     "fcm_django",
+    'cloudinary',
+    'cloudinary_storage'
 ]
 
 MIDDLEWARE = [
@@ -118,7 +108,7 @@ DATABASES = {
         'NAME': os.getenv('DB_NAME','default_db_name'),
         'USER' : os.getenv('DB_USER','default_user'),
         'PASSWORD' : os.getenv('DB_PASSWORD','default_password'),
-        'HOST' : os.getenv('DB_HOST','localhost'),
+        'HOST' : os.getenv('DB_HOST','db'),
         'PORT' : os.getenv('DB_PORT','5432'),
     }
 }
@@ -158,10 +148,15 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+# Cloudinary settings
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': 'dqffglvoq',  
+    'API_KEY': '896677811192911',       
+    'API_SECRET': 'RXjm2tI-JwhSwYUb3TUuFyEHyh8',  
+}
 
-MEDIA_URL = '/media/'
-# MEDIA_ROOT = '/app/media'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
 
 
 # Default primary key field type
@@ -172,25 +167,13 @@ CORS_ALLOW_ALL_ORIGINS=True
 CORS_ALLOW_CREDENTIALS=True
 
 SOCKETIO_ALLOWED_ORIGINS = [
-    "http://74.179.83.230",
+    'http://13.66.191.134',
+    'https://royalsofa.online',
     'http://localhost:5173',
-    'https://scrapxchange.store',
-    'https://www.scrapxchange.store',
 ]
-
-CORS_ALLOWED_ORIGINS = [
-    'https://scrapxchange.store',
-    'https://www.scrapxchange.store',
-]
-
-# CSRF_TRUSTED_ORIGINS = [
-#     "https://scrapxchange.store",
-#     "https://www.scrapxchange.store",
-# ]
 
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://74.179.83.230",
     'http://localhost:5173',
 ]
 
@@ -216,15 +199,16 @@ CHANNEL_LAYERS = {
 }
 
 # Broker and backend settings for Celery
-CELERY_BROKER_URL="redis://localhost:6379/0"
-CELERY_RESULT_BACKEND="redis://localhost:6379/0"
-# CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
-# CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
+# CELERY_BROKER_URL="redis://localhost:6379/0"
+# CELERY_RESULT_BACKEND="redis://localhost:6379/0"
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True 
+
 
 
 FCM_DJANGO_SETTINGS = {

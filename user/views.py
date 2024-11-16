@@ -187,24 +187,22 @@ class EditUserProfileView(APIView):
         return Response(serializer.data)
 
     def put(self, request):
-        print('the coming request ',request.data)
+        print('Incoming request data:', request.data)
         try:
             user_profile = UserProfile.objects.get(user=request.user)
         except UserProfile.DoesNotExist:
             return Response({"error": "UserProfile not found."}, status=status.HTTP_404_NOT_FOUND)
-        print(request.data.get('profile_picture'))
-        if isinstance(request.data.get('profile_picture'), str):
-            request_data = request.data.copy()
-            request_data.pop('profile_picture', None)
-            serializer = EditUserProfileSerializer(user_profile, data=request_data, partial=True)
-        else:
-            serializer = EditUserProfileSerializer(user_profile, data=request.data, partial=True)
+
+        serializer = EditUserProfileSerializer(user_profile, data=request.data, partial=True)
 
         if serializer.is_valid():
             serializer.save()
+            print('Profile updated successfully')
             return Response({'message': 'Profile updated successfully', 'data': serializer.data}, status=status.HTTP_200_OK)
-        
+
+        print('Validation errors:', serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 # -------- Shop List ---------------
@@ -379,7 +377,6 @@ class UserMessageView(generics.GenericAPIView):
 
     def post(self, request, room_id):
         print('the coming request is in post ',request.data)
-        print('the coming files ', request.FILES)
         try:
             room = get_object_or_404(ChatRoom, id=room_id)
             sender = request.user  # Assuming the user is authenticated
@@ -388,28 +385,24 @@ class UserMessageView(generics.GenericAPIView):
             print('the reciever id ',receiver_id)
             message_text = request.data.get('message')
             
-            # Check for files in the request
-            file = request.FILES.get('file', None)
-            print('the files',file)
-            image, video = None, None
-            audio = request.FILES.get('audio', None)
 
-            if file:
-                if file.content_type.startswith('image/'):
-                    print('this is image')
-                    image = file
-                elif file.content_type.startswith('video/'):
-                    print('this is video')
-                    video = file
+            image_url = None
+            video_url = None
+            if 'image' in request.data:
+                image_url = request.data['image']  # Image URL from frontend
+                print('Image URL received:', image_url)
+
+            if 'video' in request.data:
+                video_url = request.data['video']  # Video URL from frontend
+                print('Video URL received:', video_url)
 
             message = Message.objects.create(
                 room=room,
                 sender=sender,
                 receiver_id=receiver_id,
                 message=message_text,
-                image=image,
-                video=video,
-                audio=audio
+                image=image_url,
+                video=video_url,
             )
             
             print ('the message details ',message)
@@ -420,9 +413,8 @@ class UserMessageView(generics.GenericAPIView):
                 'room_id': room_id,
                 'sender_id': sender.id,
                 'receiver_id': receiver_id,
-                'image': message.image.url if message.image else None,
-                'audio': message.audio.url if message.audio else None,
-                'video': message.video.url if message.video else None,
+                'image': message.image if message.image else None,
+                'video': message.video if message.video else None,
                 'timestamp': message.timestamp.isoformat(),
             }, room=room_id)
 

@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser,BaseUserManager,PermissionsMixin
 from shop.models import *
+from cloudinary.models import CloudinaryField
 
 # Create your models here.
 
@@ -59,7 +60,7 @@ class UserProfile(models.Model):
     pincode=models.CharField(max_length=10,blank=True)
     phone=models.CharField(max_length=15,blank=True)
     alternative_phone=models.CharField(max_length=15,blank=True)
-    profile_picture =models.ImageField(upload_to='Profile_pics',blank=True)
+    profile_picture = CloudinaryField('image', blank=True)
     warning_count = models.IntegerField(default=0)
     is_blocked= models.BooleanField(default=False)
     otp = models.CharField(max_length=6,blank=True,null=True)
@@ -136,9 +137,8 @@ class Message(models.Model):
     receiver = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='received_messages')
     timestamp = models.DateTimeField(auto_now_add=True)
     message = models.TextField()
-    image = models.ImageField(upload_to='messages/images/', blank=True, null=True)
-    video = models.FileField(upload_to='messages/videos/', blank=True, null=True)
-    audio = models.FileField(upload_to='messages/audio/', blank=True, null=True)
+    image = CloudinaryField('image', blank=True, null=True)
+    video = CloudinaryField('videos', blank=True, null=True)
 
     def __str__(self):
         return f"Message from {self.sender.username} to {self.receiver.username}"

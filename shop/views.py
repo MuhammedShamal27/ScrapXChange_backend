@@ -59,6 +59,7 @@ class CategoryListView(generics.ListAPIView):
     
 
 
+
 class CategoryCreateView(generics.CreateAPIView):
     serializer_class = CategoryCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -486,8 +487,7 @@ class ShopMessageView(generics.GenericAPIView):
             file = request.FILES.get('file', None)
             print('the files',file)
             image, video = None, None
-            audio = request.FILES.get('audio', None)
-            print('the audio',audio)
+
 
             if file:
                 if file.content_type.startswith('image/'):
@@ -504,7 +504,6 @@ class ShopMessageView(generics.GenericAPIView):
                 message=message_text,
                 image=image,
                 video=video,
-                audio=audio
             )
             
             print ('the message details ',message)
@@ -516,7 +515,6 @@ class ShopMessageView(generics.GenericAPIView):
                 'sender_id': sender.id,
                 'receiver_id': receiver_id,
                 'image': message.image.url if message.image else None,
-                'audio': message.audio.url if message.audio else None,
                 'video': message.video.url if message.video else None,
                 'timestamp': message.timestamp.isoformat(),
             }, room=room_id)

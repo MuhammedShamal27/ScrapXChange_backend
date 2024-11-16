@@ -14,10 +14,9 @@ from user.models import *  # Import after django.setup()
 sio = socketio.AsyncServer(
     async_mode='asgi',
     cors_allowed_origins=[
-        'http://74.179.83.230',
-        'http://localhost:5173',
-        'https://scrapxchange.store',
-        'https://www.scrapxchange.store',
+         'https://royalsofa.online',
+         "http://backend:8000",
+        # 'http://localhost:5173',
     ]
 )
 
