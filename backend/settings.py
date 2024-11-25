@@ -25,11 +25,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY','fallback-secret-key-if-env-not-set')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ["*", 'http://13.66.191.134','https://royalsofa.online',]
+ALLOWED_HOSTS = ["*", 
+                #  'http://13.66.191.134',
+                #  'https://royalsofa.online'
+                 ]
 
-CORS_ALLOW_HEADERS = ["*", 'http://13.66.191.134','https://royalsofa.online']
+CORS_ALLOW_HEADERS = ["*", 
+                    #   'http://13.66.191.134',
+                    #   'https://royalsofa.online'
+                      ]
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -57,14 +63,10 @@ INSTALLED_APPS = [
     'user',
     'shop',
     'scrapxchange_admin',
-    'notifications',
     'rest_framework',
     'corsheaders',
     'channels',
     'django_celery_results',
-    "fcm_django",
-    'cloudinary',
-    'cloudinary_storage'
 ]
 
 MIDDLEWARE = [
@@ -108,7 +110,7 @@ DATABASES = {
         'NAME': os.getenv('DB_NAME','default_db_name'),
         'USER' : os.getenv('DB_USER','default_user'),
         'PASSWORD' : os.getenv('DB_PASSWORD','default_password'),
-        'HOST' : os.getenv('DB_HOST','db'),
+        'HOST' : os.getenv('DB_HOST','localhost'),
         'PORT' : os.getenv('DB_PORT','5432'),
     }
 }
@@ -167,8 +169,8 @@ CORS_ALLOW_ALL_ORIGINS=True
 CORS_ALLOW_CREDENTIALS=True
 
 SOCKETIO_ALLOWED_ORIGINS = [
-    'http://13.66.191.134',
-    'https://royalsofa.online',
+    # 'http://13.66.191.134',
+    # 'https://royalsofa.online',
     'http://localhost:5173',
 ]
 
@@ -193,16 +195,17 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('redis', 6379)],  
+            "hosts": [('localhost', 6379)],  
         },
     },
 }
 
 # Broker and backend settings for Celery
-# CELERY_BROKER_URL="redis://localhost:6379/0"
-# CELERY_RESULT_BACKEND="redis://localhost:6379/0"
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
-CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
+# CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
+# CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
+
+CELERY_BROKER_URL="redis://127.0.0.1:6379/0"
+CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -211,8 +214,3 @@ CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 
 
-FCM_DJANGO_SETTINGS = {
-    "FCM_SERVER_KEY": "23280ddda6b362aea536ab681da82a9adc4e13d7",  
-    "ONE_DEVICE_PER_USER": True,  
-    "DELETE_INACTIVE_DEVICES": True,  
-}

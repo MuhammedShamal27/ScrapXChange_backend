@@ -1,7 +1,6 @@
 from django.db import models
 from django.conf import settings
 from user.models import *
-from cloudinary.models import CloudinaryField
 # Create your models here.  
 
 class Shop(models.Model):
@@ -9,7 +8,7 @@ class Shop(models.Model):
     shop_name = models.CharField(max_length=33)
     shop_license_number = models.CharField(max_length=50,unique=True)
     phone = models.CharField(max_length=15,unique=True)
-    profile_picture = CloudinaryField('image', blank=True)
+    profile_picture = models.CharField(blank=True)
     address = models.TextField()
     pincode = models.CharField(max_length=10)
     state=models.CharField(max_length=100)
@@ -26,7 +25,7 @@ class Shop(models.Model):
     
 class Category(models.Model):
     name = models.CharField(max_length=33)
-    image = CloudinaryField('image', blank=True)
+    image = models.CharField( blank=True)
     description = models.TextField(blank=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name='categories')
     
@@ -38,7 +37,7 @@ class Product(models.Model):
     name = models.CharField(max_length=100)
     price = models.DecimalField(max_digits=10 ,decimal_places=2)
     category = models.ForeignKey(Category,on_delete=models.CASCADE,related_name='products')
-    image = CloudinaryField('image', blank=True)
+    image = models.CharField(blank=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name='products')
     
 

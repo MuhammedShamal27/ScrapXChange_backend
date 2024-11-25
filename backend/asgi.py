@@ -14,9 +14,9 @@ from user.models import *  # Import after django.setup()
 sio = socketio.AsyncServer(
     async_mode='asgi',
     cors_allowed_origins=[
-         'https://royalsofa.online',
-         "http://backend:8000",
-        # 'http://localhost:5173',
+        #  'https://royalsofa.online',
+        #  "http://backend:8000",
+        'http://localhost:5173',
     ]
 )
 

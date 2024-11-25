@@ -56,8 +56,6 @@ class CategoryListView(generics.ListAPIView):
             raise PermissionDenied("You do not have permission to access this resource.")
         print('the user',self.request.user)
         return Category.objects.filter(user=self.request.user)
-    
-
 
 
 class CategoryCreateView(generics.CreateAPIView):
@@ -294,22 +292,6 @@ class ScrapCollectionView(APIView):
 
         if collection_request.shop != shop:
             return Response({'error': 'This collection request does not belong to your shop.'}, status=status.HTTP_403_FORBIDDEN)
-
-        # products = []
-        # index = 0
-
-        # while True:
-        #     product_id_key = f'formData[{index}][id]'
-        #     quantity_key = f'formData[{index}][quantity]'
-        #     if product_id_key in data and quantity_key in data:
-        #         product_data = {
-        #             'product_id': data[product_id_key],
-        #             'quantity': data[quantity_key]
-        #         }
-        #         products.append(product_data)
-        #         index += 1
-        #     else:
-        #         break
         
         products = []
         for item in data.get('formData', []):
@@ -483,18 +465,17 @@ class ShopMessageView(generics.GenericAPIView):
             print('the reciever id ',receiver_id)
             message_text = request.data.get('message')
             
-            # Check for files in the request
-            file = request.FILES.get('file', None)
-            print('the files',file)
+            file = request.data.get('file', None)  # Handle URL directly as it's a string
+            print('The file:', file)
             image, video = None, None
 
-
-            if file:
-                if file.content_type.startswith('image/'):
-                    print('this is image')
+            # Check if the file is a URL
+            if file and isinstance(file, str):
+                if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp')):
+                    print('This is an image URL')
                     image = file
-                elif file.content_type.startswith('video/'):
-                    print('this is video')
+                elif file.lower().endswith(('.mp4', '.avi', '.mov', '.mkv', '.webm')):
+                    print('This is a video URL')
                     video = file
 
             message = Message.objects.create(
@@ -514,8 +495,8 @@ class ShopMessageView(generics.GenericAPIView):
                 'room_id': room_id,
                 'sender_id': sender.id,
                 'receiver_id': receiver_id,
-                'image': message.image.url if message.image else None,
-                'video': message.video.url if message.video else None,
+                'image': message.image if message.image else None,
+                'video': message.video if message.video else None,
                 'timestamp': message.timestamp.isoformat(),
             }, room=room_id)
 

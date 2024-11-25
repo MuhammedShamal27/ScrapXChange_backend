@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser,BaseUserManager,PermissionsMixin
 from shop.models import *
-from cloudinary.models import CloudinaryField
+
 
 # Create your models here.
 
@@ -60,7 +60,7 @@ class UserProfile(models.Model):
     pincode=models.CharField(max_length=10,blank=True)
     phone=models.CharField(max_length=15,blank=True)
     alternative_phone=models.CharField(max_length=15,blank=True)
-    profile_picture = CloudinaryField('image', blank=True)
+    profile_picture = models.CharField(max_length=255, blank=True)
     warning_count = models.IntegerField(default=0)
     is_blocked= models.BooleanField(default=False)
     otp = models.CharField(max_length=6,blank=True,null=True)
@@ -128,7 +128,7 @@ class ChatRoom(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Room {self.id} - {self.user.username} and {self.shop.shop_name}"  # Using the primary key as room_id
+        return f"Room {self.id} - {self.user.username} and {self.shop.shop_name}"  
 
 
 class Message(models.Model):
@@ -137,8 +137,8 @@ class Message(models.Model):
     receiver = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='received_messages')
     timestamp = models.DateTimeField(auto_now_add=True)
     message = models.TextField()
-    image = CloudinaryField('image', blank=True, null=True)
-    video = CloudinaryField('videos', blank=True, null=True)
+    image = models.CharField( blank=True, null=True)
+    video = models.CharField( blank=True, null=True)
 
     def __str__(self):
         return f"Message from {self.sender.username} to {self.receiver.username}"

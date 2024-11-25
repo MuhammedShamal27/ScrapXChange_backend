@@ -134,9 +134,10 @@ class ShopBlockUnblockSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    profile_picture = serializers.CharField(source='User_profile.profile_picture', read_only=True)
     class Meta:
         model = CustomUser
-        fields = ['id', 'email', 'username', 'is_shop', 'is_superuser', 'date_joined', 'last_login']
+        fields = ['id', 'email', 'username', 'is_shop', 'is_superuser', 'date_joined', 'last_login', 'profile_picture']
 
 class CollectionRequestSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField()

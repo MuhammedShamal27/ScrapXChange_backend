@@ -385,24 +385,26 @@ class UserMessageView(generics.GenericAPIView):
             print('the reciever id ',receiver_id)
             message_text = request.data.get('message')
             
+            file = request.data.get('file', None)  # Handle URL directly as it's a string
+            print('The file:', file)
+            image, video = None, None
 
-            image_url = None
-            video_url = None
-            if 'image' in request.data:
-                image_url = request.data['image']  # Image URL from frontend
-                print('Image URL received:', image_url)
-
-            if 'video' in request.data:
-                video_url = request.data['video']  # Video URL from frontend
-                print('Video URL received:', video_url)
+            # Check if the file is a URL
+            if file and isinstance(file, str):
+                if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp')):
+                    print('This is an image URL')
+                    image = file
+                elif file.lower().endswith(('.mp4', '.avi', '.mov', '.mkv', '.webm')):
+                    print('This is a video URL')
+                    video = file
 
             message = Message.objects.create(
                 room=room,
                 sender=sender,
                 receiver_id=receiver_id,
                 message=message_text,
-                image=image_url,
-                video=video_url,
+                image=image,
+                video=video,
             )
             
             print ('the message details ',message)

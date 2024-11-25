@@ -231,7 +231,7 @@ class UserLoginSerializer(serializers.Serializer):
 
 
 class HomePageSerializer(serializers.ModelSerializer):
-    profile_picture = serializers.ImageField(source='User_profile.profile_picture',read_only=True)
+    profile_picture = serializers.CharField(source='User_profile.profile_picture',read_only=True)
 
     class Meta:
         model=CustomUser
@@ -243,9 +243,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
     
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        # Ensure the profile_picture is always a valid URL
         if instance.profile_picture:
-            profile_picture_url = instance.profile_picture.url  # Get the actual URL
+            profile_picture_url = instance.profile_picture  
             if not profile_picture_url.startswith("http"):
                 profile_picture_url = f"https://res.cloudinary.com/dqffglvoq/{profile_picture_url}"
             data['profile_picture'] = profile_picture_url
@@ -255,76 +254,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = ['username','email','address','pincode','phone','alternative_phone','profile_picture']
     
-
-# class EditUserProfileSerializer(serializers.ModelSerializer):
-#     email=serializers.EmailField(source='user.email')
-#     username=serializers.CharField(source='user.username')
-#     address=serializers.CharField(required=False)
-#     phone=serializers.CharField(required=True)
-#     alternative_phone=serializers.CharField(required=False)
-#     pincode=serializers.CharField(required=False)
-#     profile_picture=serializers.ImageField(required=False)
-
-#     class Meta:
-#         model = UserProfile
-#         fields= ['username','email','address','phone','alternative_phone','pincode','profile_picture']
-
-#     def validate_username(self,value):
-#         if ' ' in value or not value.isalpha():
-#             raise serializers.ValidationError("The Username should only contain alphabets and no spaces.")
-#         return value
-    
-#     def validate_address(self,value):
-#         if value and (value[0].isspace() or any(c in "!@#$%^&()_+=<>?/;:'\"[]{}|\\`~" for c in value)and not ('.' in value or ',' in value)):
-#             raise serializers.ValidationError("Address cannot start with a space or contain special character except dot(.) and comma (,)")
-#         return value
-    
-#     def validate_phone(self,value):
-#         if not value.isdigit() or len(value)!=10:
-#             raise serializers.ValidationError("Phone number must be 10 digits.")
-#         return value
-    
-#     def validate_alternative_phone(self,value):
-#         if value and ( not value.isdigit() or len(value) !=10):
-#             raise serializers.ValidationError("Alternative phone number must be 10 digits.")
-#         if value == self.initial_data.get('phone'):
-#             raise serializers.ValidationError('Alternative phone number cannot be the same as the primary phone number.')
-#         return value
-    
-    
-#     def validate_pincode(self,value):
-#         if not value.isdigit() or len(value) !=6:
-#             raise serializers.ValidationError("Pincode must be 6 digits.")
-#         return value
-    
-#     def validate_profile_picture(self, value):
-#         print('Validating profile picture:', value)
-#         max_size = 2 * 1024 * 1024  # 2MB
-#         if value and value.size > max_size:
-#             raise serializers.ValidationError("Profile picture size cannot exceed 2MB.")
-#         return value
-    
-#     def update(self, instance, validated_data):
-#         user_data = validated_data.pop('user', {})
-#         user = instance.user
-#         if 'username' in user_data:
-#             user.username = user_data['username']
-#         if 'email' in user_data:
-#             user.email = user_data['email']
-#         user.save()
-
-#         instance.address = validated_data.get('address', instance.address)
-#         instance.phone = validated_data.get('phone', instance.phone)
-#         instance.alternative_phone = validated_data.get('alternative_phone', instance.alternative_phone)
-#         instance.pincode = validated_data.get('pincode', instance.pincode)
-#         profile_picture = validated_data.get('profile_picture')
-#         if profile_picture:
-#             instance.profile_picture = profile_picture
-        
-#         instance.save()
-        
-#         return instance
-
 class EditUserProfileSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email')
     username = serializers.CharField(source='user.username')
@@ -332,7 +261,7 @@ class EditUserProfileSerializer(serializers.ModelSerializer):
     phone = serializers.CharField(required=True)
     alternative_phone = serializers.CharField(required=False)
     pincode = serializers.CharField(required=False)
-    profile_picture = serializers.CharField(required=False)  # Accepts a URL or a file reference.
+    profile_picture = serializers.CharField(required=False)  
 
     class Meta:
         model = UserProfile
@@ -371,7 +300,6 @@ class EditUserProfileSerializer(serializers.ModelSerializer):
         """
         max_size = 2 * 1024 * 1024  # 2MB
         if value:
-            # Check if the value is a valid URL
             if isinstance(value, str) and not value.startswith("http"):
                 raise serializers.ValidationError("Profile picture must be a valid URL or an uploaded file.")
         return value
@@ -391,14 +319,11 @@ class EditUserProfileSerializer(serializers.ModelSerializer):
         instance.alternative_phone = validated_data.get('alternative_phone', instance.alternative_phone)
         instance.pincode = validated_data.get('pincode', instance.pincode)
         
-        # Handle profile_picture separately
         profile_picture = validated_data.get('profile_picture')
         if profile_picture:
             if isinstance(profile_picture, str) and profile_picture.startswith("http"):
-                # If it's a URL, directly set it
                 instance.profile_picture = profile_picture
             else:
-                # If it's a file, handle the upload (already done in the backend)
                 instance.profile_picture = profile_picture
         
         instance.save()
@@ -538,9 +463,7 @@ class ChatRoomSerializer(serializers.ModelSerializer):
             shop=validated_data['shop'],
         )
         return room
-    
-    # receiver_username = serializers.CharField(source='receiver.username', read_only=True)
-    # sender_username = serializers.CharField(source='sender.username', read_only=True)
+
 class MessageSerializer(serializers.ModelSerializer):
     image = serializers.CharField(required=False)
     video = serializers.CharField(required=False)
@@ -552,14 +475,13 @@ class MessageSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
 
-        # Format media URLs
         if instance.image:
             print('image')
-            data['image'] = instance.image.url
+            data['image'] = instance.image
 
         if instance.video:
             print('video')
-            data['video'] = instance.video.url  
+            data['video'] = instance.video  
 
 
         return data
@@ -578,11 +500,7 @@ class MessageSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Receiver is not part of this chat room.")
         
         return super().create(validated_data)
-    
-# class NotificationSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Notification
-#         fields = ['id','sender','reciver','message','is_read','created_at']
+
 
 
 class UserReportSerializer(serializers.ModelSerializer):

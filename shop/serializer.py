@@ -175,7 +175,7 @@ class ShopLoginSerializer(serializers.ModelSerializer):
 
                
 class ShopHomeSerializer(serializers.ModelSerializer):
-    user_profile = serializers.ImageField(source='shop.profile_picture',read_only=True)
+    user_profile = serializers.CharField(source='shop.profile_picture',read_only=True)
 
     class Meta:
         model = CustomUser
@@ -234,7 +234,7 @@ class CategoryCreateSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         # Ensure the image field returns only the relative path
         if instance.image:
-            representation['image'] = instance.image.url  # Will only include the relative path
+            representation['image'] = instance.image
         return representation
         
 class CategoryUpdateSerializer(serializers.ModelSerializer):
@@ -585,28 +585,13 @@ class ShopChatRoomSerializer(serializers.ModelSerializer):
 class ShopMessageSerializer(serializers.ModelSerializer):
     sender_username = serializers.CharField(source='sender.username', read_only=True)
     receiver_username = serializers.CharField(source='receiver.username', read_only=True)
-    audio = serializers.ImageField(required=False)
-    image = serializers.ImageField(required=False)
-    video = serializers.ImageField(required=False)
+    image = serializers.CharField(required=False)
+    video = serializers.CharField(required=False)
      
     class Meta:
         model = Message
-        fields = ['id', 'room', 'sender', 'receiver', 'timestamp', 'message','audio','image','video','sender_username', 'receiver_username']
-        
-    def validate_image(self, value):
-        if value and not value.name.endswith(('jpg', 'jpeg', 'png', 'gif')):
-            raise serializers.ValidationError('Unsupported image file type.')
-        return value
+        fields = ['id', 'room', 'sender', 'receiver', 'timestamp', 'message','image','video','sender_username', 'receiver_username']
 
-    def validate_video(self, value):
-        if value and not value.name.endswith(('mp4', 'avi', 'mov')):
-            raise serializers.ValidationError('Unsupported video file type.')
-        return value
-
-    def validate_audio(self, value):
-        if value and not value.name.endswith(('webm', 'mp3', 'wav', 'ogg')):
-            raise serializers.ValidationError('Unsupported audio file type.')
-        return value
     
     def create(self, validated_data):
         
